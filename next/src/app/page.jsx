@@ -6,7 +6,7 @@ export default function Page() {
       <section className="flex flex-col justify-center items-center py-10 text-gray-800 bg-gray-100/80 shadow-md">
         <h1 className="text-5xl font-extrabold text-black tracking-wide">Media-Matrix</h1>
         <span className="text-gray-600 text-xl mt-2">
-          Storage, Editing, and AI all at the same place
+          Storage, Editing, and AI all at the same place 
         </span>
       </section>
 
