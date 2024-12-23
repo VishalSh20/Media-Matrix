@@ -26,7 +26,7 @@ const validVideoTypes = [
 // media related functions - upload, get all, rename, delete
 export async function getMediaUploadURL(req,res){
     try{
-    const {userId,foldername="",filename,size,type} = req.query;
+    const {userId,foldername="",filename,type} = req.query;
 
     if(!userId)
         return res.status(400).json({error:"User ID is required"});
@@ -44,7 +44,6 @@ export async function getMediaUploadURL(req,res){
         Bucket:process.env.AWS_BUCKET_NAME,
         Key:key,
         ContentType:type,
-        ContentLength:size
     });
     const postingURL = await getSignedUrl(s3Client,command);
     res.status(200).json({url:postingURL,key:key});
