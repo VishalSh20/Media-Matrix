@@ -26,7 +26,7 @@ const validVideoTypes = [
 // media related functions - upload, get all, rename, delete
 export async function getMediaUploadURL(req,res){
     try{
-    const {userId,foldername="",filename,type} = req.query;
+    let {userId,folderKey="/",filename,type} = req.query;
 
     if(!userId)
         return res.status(400).json({error:"User ID is required"});
@@ -37,8 +37,11 @@ export async function getMediaUploadURL(req,res){
     if(!validImageTypes.includes(type) && !validVideoTypes.includes(type))
         return res.status(400).json({error:"Invalid media type - only images and videos are allowed"});
 
+    if(!folderKey.endsWith("/"))
+        folderKey = folderKey + "/";
+
     const extension = type.substring(type.indexOf("/")+1);
-    const key = (foldername && foldername.length>0) ? `${userId}${foldername}/${filename}-${Date.now()}.${extension}` : `${userId}/${filename}-${Date.now()}.${extension}`;
+    const key = (folderKey && folderKey.length>0) ? `users/${userId}${folderKey}${filename}-${Date.now()}.${extension}` : `${userId}/${filename}-${Date.now()}.${extension}`;
     console.log(key);
     const command = new PutObjectCommand({
         Bucket:process.env.AWS_BUCKET_NAME,
@@ -61,12 +64,19 @@ export const getAllMedia = async (req,res) => {
 
         const listOptions = {
             Bucket:process.env.AWS_BUCKET_NAME,
-            Prefix:`${userId}/`,
+            Prefix:`users/${userId}/`
         };
         const command = new ListObjectsV2Command(listOptions);
         const response = await s3Client.send(command);
-        let files = response.Contents.filter(content => !content.Key.endsWith("/"));
-        console.log(files);
+
+        let files = response.Contents?.filter(content => !content.Key.endsWith("/")) || [];
+        let folders = response.Contents?.filter(content => content.Key.endsWith("/")).map((folder)=>{
+            return {
+                key:folder.Key,
+                name:folder.Key.substring(folder.Key.lastIndexOf("/")+1),
+            }
+        }) || [];
+        
         for(let file of files){
             const getCommand = new GetObjectCommand({
                 Bucket:process.env.AWS_BUCKET_NAME,
@@ -84,7 +94,8 @@ export const getAllMedia = async (req,res) => {
             message:"Media fetched successfully",
             data:{
                 images,
-                videos
+                videos,
+                folders
             }});
     } catch (error) {
         console.error(error);
@@ -104,14 +115,14 @@ export const renameMedia = async (req,res) => {
 
         const copyCommand = new CopyObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            CopySource:`${process.env.AWS_BUCKET_NAME}/${userId}${oldKey}`,
-            Key:`${userId}${newKey}`
+            CopySource:`${process.env.AWS_BUCKET_NAME}/users/${userId}${oldKey}`,
+            Key:`users/${userId}${newKey}`
         });
         await s3Client.send(copyCommand);
 
         const deleteCommand = new DeleteObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`${userId}${oldKey}`
+            Key:`users/${userId}${oldKey}`
         });
         await s3Client.send(deleteCommand);
         return res.status(200).json({message:"Media renamed successfully"});
@@ -131,7 +142,7 @@ export const deleteMedia = async (req,res) => {
 
         const deleteCommand = new DeleteObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`${userId}${key}`
+            Key:`users/${userId}${key}`
         });
         await s3Client.send(deleteCommand);
         return res.status(200).json({message:"Media deleted successfully"});
@@ -154,13 +165,13 @@ export const getContentList = async (req,res) => {
 
         const listOptions = {
             Bucket:process.env.AWS_BUCKET_NAME,
-            Prefix:`${userId}${key}`,
+            Prefix:`users/${userId}${key}`,
             Delimiter:"/"
         };
         const command = new ListObjectsV2Command(listOptions);
         const response = await s3Client.send(command);
-        const folders = response.CommonPrefixes.map(prefix => prefix.Prefix.substring((userId+key).length));
-        let files = response.Contents.filter(content => !content.Key.endsWith("/"));
+        const folders = response.CommonPrefixes?.map(prefix => prefix.Prefix.substring((userId+key).length)) || [];
+        let files = response.Contents?.filter(content => !content.Key.endsWith("/")) || [];
         for(let file of files){
             const getCommand = new GetObjectCommand({
                 Bucket:process.env.AWS_BUCKET_NAME,
@@ -203,7 +214,7 @@ export const createFolder = async (req,res) => {
     
         const command = new PutObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`${userId}${key}`,
+            Key:`users/${userId}${key}`,
             Body:Buffer.from("")
         });
         await s3Client.send(command);
@@ -232,7 +243,7 @@ export const renameFolder = async (req,res) => {
 
     const listCommand = new ListObjectsV2Command({
         Bucket:process.env.AWS_BUCKET_NAME,
-        Prefix:`${userId}${oldKey}`
+        Prefix:`users/${userId}${oldKey}`
     });
     const listResponse = await s3Client.send(listCommand);
     console.log(listResponse);
@@ -241,8 +252,8 @@ export const renameFolder = async (req,res) => {
     for(let object of objects){
         const copyOptions ={
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`${userId}${newKey}${object.Key.substring((userId+oldKey).length)}`,
-            CopySource:`${process.env.AWS_BUCKET_NAME}/${object.Key}`
+            Key:`users/${userId}${newKey}${object.Key.substring((userId+oldKey).length)}`,
+            CopySource:`${process.env.AWS_BUCKET_NAME}/users/${userId}${oldKey}`
         }
         console.log(copyOptions);
         const copyCommand = new CopyObjectCommand(copyOptions);
@@ -278,7 +289,7 @@ export const deleteFolder = async (req,res) => {
 
         const listCommand = new ListObjectsV2Command({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Prefix:`${userId}${key}`
+            Prefix:`users/${userId}${key}`
         });
         const listResponse = await s3Client.send(listCommand);
         console.log(listResponse);

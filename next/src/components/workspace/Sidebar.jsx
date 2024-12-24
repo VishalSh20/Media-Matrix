@@ -1,4 +1,4 @@
-import { Home, Brain, Bell, Camera, Video, Pencil, Music, CreditCard, Download } from 'lucide-react';
+import { Home, Folder, Bell, Camera, Video, Pencil, Music, CreditCard, Download } from 'lucide-react';
 import Link from 'next/link';
 
 export function Sidebar() {
@@ -18,9 +18,8 @@ export function Sidebar() {
             <span>Home</span>
           </Link>
           <Link href="/workspace/train" className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded-lg">
-            <Brain size={20} />
-            <span>Train Model</span>
-            <span className="ml-auto text-xs bg-gray-700 px-2 py-1 rounded">Waitlist</span>
+            <Folder size={20} />
+            <span>My Storage</span>
           </Link>
           <Link href="/workspace/updates" className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded-lg">
             <Bell size={20} />
