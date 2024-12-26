@@ -17,7 +17,7 @@ export function Sidebar() {
             <Home size={20} />
             <span>Home</span>
           </Link>
-          <Link href="/workspace/train" className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded-lg">
+          <Link href="/workspace/storage" className="flex items-center gap-3 p-2 hover:bg-gray-800 rounded-lg">
             <Folder size={20} />
             <span>My Storage</span>
           </Link>

@@ -26,23 +26,22 @@ const validVideoTypes = [
 // media related functions - upload, get all, rename, delete
 export async function getMediaUploadURL(req,res){
     try{
-    let {userId,folderKey="/",filename,type} = req.query;
+    let {userId,folderPath="/",filename,type} = req.query;
 
     if(!userId)
         return res.status(400).json({error:"User ID is required"});
 
-    if([filename,size,type].some(field => !field))
+    if([filename,type].some(field => !field))
         return res.status(400).json({error:"All fields are required"});
 
     if(!validImageTypes.includes(type) && !validVideoTypes.includes(type))
         return res.status(400).json({error:"Invalid media type - only images and videos are allowed"});
 
-    if(!folderKey.endsWith("/"))
-        folderKey = folderKey + "/";
+    if(!folderPath.endsWith("/"))
+        folderPath = folderPath + "/";
 
     const extension = type.substring(type.indexOf("/")+1);
-    const key = (folderKey && folderKey.length>0) ? `users/${userId}${folderKey}${filename}-${Date.now()}.${extension}` : `${userId}/${filename}-${Date.now()}.${extension}`;
-    console.log(key);
+    const key = (folderPath && folderPath.length>0) ? `users/${userId}${folderPath}${filename}-${Date.now()}.${extension}` : `${userId}/${filename}-${Date.now()}.${extension}`;
     const command = new PutObjectCommand({
         Bucket:process.env.AWS_BUCKET_NAME,
         Key:key,
@@ -69,14 +68,7 @@ export const getAllMedia = async (req,res) => {
         const command = new ListObjectsV2Command(listOptions);
         const response = await s3Client.send(command);
 
-        let files = response.Contents?.filter(content => !content.Key.endsWith("/")) || [];
-        let folders = response.Contents?.filter(content => content.Key.endsWith("/")).map((folder)=>{
-            return {
-                key:folder.Key,
-                name:folder.Key.substring(folder.Key.lastIndexOf("/")+1),
-            }
-        }) || [];
-        
+        let files = response.Contents ? response.Contents.filter(content => !content.Key.endsWith("/")) : [];
         for(let file of files){
             const getCommand = new GetObjectCommand({
                 Bucket:process.env.AWS_BUCKET_NAME,
@@ -84,18 +76,19 @@ export const getAllMedia = async (req,res) => {
             });
             const fileURL = await getSignedUrl(s3Client,getCommand);
             file.url = fileURL;
+            file.path = file.Key.substring((`users/${userId}`).length);
             file.filename = file.Key.substring(file.Key.lastIndexOf("/")+1);
+            file.name = file.filename.substring(0,file.filename.lastIndexOf("."));
             file.extension = file.Key.substring(file.Key.lastIndexOf(".")+1);
         }
-        const images = files.filter(file => validImageTypes.includes(`image/${file.extension}`));
-        const videos = files.filter(file => validVideoTypes.includes(`video/${file.extension}`));
+        const images = files ? files.filter(file => validImageTypes.includes(`image/${file.extension}`)) : [];
+        const videos = files ? files.filter(file => validVideoTypes.includes(`video/${file.extension}`)) : [];
 
         return res.status(200).json({
             message:"Media fetched successfully",
             data:{
                 images,
-                videos,
-                folders
+                videos
             }});
     } catch (error) {
         console.error(error);
@@ -105,9 +98,7 @@ export const getAllMedia = async (req,res) => {
 
 export const renameMedia = async (req,res) => {
     try {
-        let {userId,oldKey,newKey} = req.query;
-        if(!userId)
-            return res.status(400).json({error:"User ID is required"});  
+        let {oldKey,newKey} = req.query;
         if(!oldKey)
             return res.status(400).json({error:"Old Key is required"});
         if(!newKey)
@@ -115,14 +106,14 @@ export const renameMedia = async (req,res) => {
 
         const copyCommand = new CopyObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            CopySource:`${process.env.AWS_BUCKET_NAME}/users/${userId}${oldKey}`,
-            Key:`users/${userId}${newKey}`
+            CopySource:`${process.env.AWS_BUCKET_NAME}/${oldKey}`,
+            Key:`${newKey}`
         });
         await s3Client.send(copyCommand);
 
         const deleteCommand = new DeleteObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`users/${userId}${oldKey}`
+            Key:`${oldKey}`
         });
         await s3Client.send(deleteCommand);
         return res.status(200).json({message:"Media renamed successfully"});
@@ -134,15 +125,13 @@ export const renameMedia = async (req,res) => {
 
 export const deleteMedia = async (req,res) => {
     try {
-        const {userId,key} = req.query;
-        if(!userId)
-            return res.status(400).json({error:"User ID is required"});  
+        const {key} = req.query;
         if(!key)
             return res.status(400).json({error:"Key is required"});
 
         const deleteCommand = new DeleteObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`users/${userId}${key}`
+            Key:`${key}`
         });
         await s3Client.send(deleteCommand);
         return res.status(200).json({message:"Media deleted successfully"});
@@ -155,9 +144,7 @@ export const deleteMedia = async (req,res) => {
 // getting all contents at a given path
 export const getContentList = async (req,res) => {
     try {
-        let {userId,key} = req.query;
-        if(!userId)
-            return res.status(400).json({error:"User ID is required"});  
+        let {key} = req.query;
         if(!key)
             return res.status(400).json({error:"Key is required"});
         if(!key.endsWith("/"))
@@ -165,13 +152,15 @@ export const getContentList = async (req,res) => {
 
         const listOptions = {
             Bucket:process.env.AWS_BUCKET_NAME,
-            Prefix:`users/${userId}${key}`,
-            Delimiter:"/"
+            Prefix:key
         };
         const command = new ListObjectsV2Command(listOptions);
         const response = await s3Client.send(command);
-        const folders = response.CommonPrefixes?.map(prefix => prefix.Prefix.substring((userId+key).length)) || [];
-        let files = response.Contents?.filter(content => !content.Key.endsWith("/")) || [];
+        const contents = response.Contents || [];
+
+        let files = contents.filter(content => {
+            return !content.Key.endsWith("/") && content.Key.lastIndexOf("/") === key.length-1;
+        });
         for(let file of files){
             const getCommand = new GetObjectCommand({
                 Bucket:process.env.AWS_BUCKET_NAME,
@@ -179,16 +168,49 @@ export const getContentList = async (req,res) => {
             });
             const fileURL = await getSignedUrl(s3Client,getCommand);
             file.url = fileURL;
+            file.path = file.Key.substring(file.Key.indexOf('/',file.Key.indexOf('/')+1)),
             file.filename = file.Key.substring(file.Key.lastIndexOf("/")+1);
             file.extension = file.Key.substring(file.Key.lastIndexOf(".")+1);
-        }
+        };
+        const videos = files ? files.filter(file => validVideoTypes.includes(`video/${file.extension}`)) : [];
+        const images = files ? files.filter(file => validImageTypes.includes(`image/${file.extension}`)) : [];
 
+
+        let folders = contents.filter(content => {
+            return content.Key.endsWith("/") && content.Key.substring(0,content.Key.length-1).lastIndexOf("/") === key.length-1;
+        }).map(folder => {
+            return {
+                key:folder.Key,
+                path:folder.Key.substring(folder.Key.indexOf('/',folder.Key.indexOf('/')+1)),
+                name:folder.Key.substring(folder.Key.substring(0,folder.Key.lastIndexOf("/")).lastIndexOf("/")+1),
+                Size:0,
+                lastModified:folder.LastModified
+            }
+        });
+        
+        let totalSize = 0;
+        for(let content of contents){
+            totalSize += content.Size;
+        }
+        if(contents.length>0){
+            for(let folder of folders){
+                for(let content of contents){
+                    if(content.Key.startsWith(folder.path)){
+                    folder.Size += content.Size;
+                }
+                }}
+        }
+        
         return res.status(200).json({
             message:"Contents fetched successfully",
             data:{
                 folders,
-                files,
-                KeyCount:response.KeyCount,
+                videos,
+                images,
+                totalSize,
+                Key:key,
+                name:key.substring(0,key.lastIndexOf("/")).substring(key.lastIndexOf("/")+1),
+                path:key.substring(key.indexOf("/",key.indexOf("/")+1)),
                 MaxKeys:response.MaxKeys,
                 IsTruncated:response.IsTruncated,
                 ContinuationToken:response.ContinuationToken,
@@ -204,9 +226,7 @@ export const getContentList = async (req,res) => {
 // folder related functions - create, rename, delete
 export const createFolder = async (req,res) => {
     try{
-        let {userId,key} = req.query;
-        if(!userId)
-            return res.status(400).json({error:"User ID is required"});  
+        let {key} = req.query;
         if(!key)
             return res.status(400).json({error:"Key is required"});
        if(!key.endsWith("/"))
@@ -214,7 +234,7 @@ export const createFolder = async (req,res) => {
     
         const command = new PutObjectCommand({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`users/${userId}${key}`,
+            Key:`${key}`,
             Body:Buffer.from("")
         });
         await s3Client.send(command);
@@ -228,9 +248,7 @@ export const createFolder = async (req,res) => {
 
 export const renameFolder = async (req,res) => {
     try{
-    let {userId,oldKey,newKey} = req.query;
-    if(!userId)
-        return res.status(400).json({error:"User ID is required"});  
+    let {oldKey,newKey} = req.query;
     if(!oldKey)
         return res.status(400).json({error:"Old Key is required"});
     if(!newKey)
@@ -243,19 +261,17 @@ export const renameFolder = async (req,res) => {
 
     const listCommand = new ListObjectsV2Command({
         Bucket:process.env.AWS_BUCKET_NAME,
-        Prefix:`users/${userId}${oldKey}`
+        Prefix:`${oldKey}`
     });
     const listResponse = await s3Client.send(listCommand);
-    console.log(listResponse);
     const objects = listResponse.Contents;
 
     for(let object of objects){
         const copyOptions ={
             Bucket:process.env.AWS_BUCKET_NAME,
-            Key:`users/${userId}${newKey}${object.Key.substring((userId+oldKey).length)}`,
-            CopySource:`${process.env.AWS_BUCKET_NAME}/users/${userId}${oldKey}`
+            Key:`${newKey}${object.Key.substring((userId+oldKey).length)}`,
+            CopySource:`${process.env.AWS_BUCKET_NAME}/${object.Key}`
         }
-        console.log(copyOptions);
         const copyCommand = new CopyObjectCommand(copyOptions);
         await s3Client.send(copyCommand);
 
@@ -279,9 +295,7 @@ export const renameFolder = async (req,res) => {
 
 export const deleteFolder = async (req,res) => {
     try {
-        let {userId,key} = req.query;
-        if(!userId)
-            return res.status(400).json({error:"User ID is required"});  
+        let {key} = req.query;
         if(!key)
             return res.status(400).json({error:"Key is required"});
         if(!key.endsWith("/"))
@@ -289,7 +303,7 @@ export const deleteFolder = async (req,res) => {
 
         const listCommand = new ListObjectsV2Command({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Prefix:`users/${userId}${key}`
+            Prefix:`${key}`
         });
         const listResponse = await s3Client.send(listCommand);
         console.log(listResponse);
