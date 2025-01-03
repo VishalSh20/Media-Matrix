@@ -224,7 +224,7 @@ export default function Home() {
                   </Link>
                 ))}
               </div>
-              <div className="text-gray-400">© 2025 Vyro AI. All rights reserved.</div>
+              <div className="text-gray-400">© 2025 V & M All rights reserved.</div>
             </div>
           </div>
         </footer>
