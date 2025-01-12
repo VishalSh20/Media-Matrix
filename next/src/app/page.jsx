@@ -6,9 +6,9 @@ import { ArrowRight } from 'lucide-react'
 
 export default function Home() {
   const stats = [
-    { icon: "👥", count: "30+ million", label: "Active Users" },
-    { icon: "📱", count: "100+ million", label: "Downloads" },
-    { icon: "💬", count: "63+ thousand", label: "Discord Members" }
+    { icon: "👥", count: "30+ ", label: "Active Users" },
+    { icon: "📱", count: "100+ ", label: "Downloads" },
+    { icon: "💬", count: "63+ ", label: "Discord Members" }
   ]
 
   const pricingPlans = [
