@@ -4,6 +4,7 @@ import ImageBlock from "../ImageBlock.jsx";
 import { ImageIcon , Loader2} from "lucide-react";
 import {baseApi} from "../../../../axios.config.js";
 import FileUploader from "../FileUploader.jsx";
+import axios from "axios";
 
 export default function AllImages(){
     const {user,isLoaded} = useUser();
@@ -16,12 +17,11 @@ export default function AllImages(){
             setLoading(true);
             setError(null);
             setImages([]);
-            const imageUrl = `${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/media?userId=${user?.id}`;
-            baseApi.get(imageUrl)
+            const imageUrl = `/api/contents?userId=${user?.id}&all=true`;
+            axios.get(imageUrl)
             .then((res)=>{
                 const response = res.data;
-                const responseData = response.data;
-                setImages(responseData.images);
+                setImages(response.images);
             })
             .catch((err)=>{
                 const errorMessage = err.response.data.message || "An error occurred while fetching images"+err.message;

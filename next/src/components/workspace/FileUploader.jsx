@@ -4,6 +4,7 @@ import { Toaster,toast } from 'react-hot-toast';
 import {useUser} from "@clerk/nextjs";
 import {baseApi} from "../../../axios.config.js"
 import PropTypes from "prop-types";
+import axios from 'axios';
 
 FileUploader.propTypes = {
     accept: PropTypes.string.isRequired,
@@ -26,38 +27,25 @@ function FileUploader({ accept, path="/",disabledByParent}) {
     const handleUpload = () => {
         const upload = () => {
             setUploading(true);
-            const filename = file.name.substring(0, file.name.indexOf("."));
-            const {type} = file;
 
-            const requestURL = `${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/media/?&userId=${user?.id}&folderPath=${path}&filename=${filename}&type=${type}`;
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', user.id);
+            formData.append('path', path);
 
-            baseApi
-                .post(requestURL)
+            axios
+                .post(`/api/file`,formData, {
+                    headers: {
+                      'Content-Type': 'multipart/form-data',
+                    },
+                  })
                 .then((response) => {
-                    const postingURL = response.data?.url;
-                    if(!postingURL) {
-                        throw new Error("response url not present");
-                    }
-                    
-                    console.log(postingURL);
-                    baseApi
-                        .put(postingURL, file, {
-                            headers: {
-                                "Content-Type": type
-                            }
-                        })
-                        .then(() => {
-                            toast.success("File uploaded Successfully!", {
-                                position: "top-center"
-                            });
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1000);
-                        })
-                        .catch((err) => {
-                            toast.error(`Error in uploading file: ${err.message || err.statusText}`);
-                            setUploading(false);
-                        });
+                    toast.success("File uploaded Successfully!", {
+                        position: "top-center"
+                    });
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
                 })
                 .catch((err) => {
                     console.log(err);

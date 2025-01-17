@@ -17,6 +17,9 @@ provider:
             - arn:aws:s3:::mediamatrix-vm/*
   environment:
     AWS_BUCKET_NAME: mediamatrix-vm
+    GEMINI_API_KEY: AIzaSyCmEv7zYeEqqndaNYJRw5TJmc7VgxeWl-k
+    REPLICATE_API_TOKEN: r8_WGuP6Wm9pICOndtOfi7BUUhTQQVcbcJ2yEozg
+
 
 functions:
   api:

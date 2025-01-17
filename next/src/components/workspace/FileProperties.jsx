@@ -51,7 +51,7 @@ export default function PropertiesModal({showProperties,setShowProperties,file})
                                     
                                     
                                     <span className="text-gray-500">Path:</span>
-                                    <span className="col-span-2 font-medium break-all">{file?.path}</span>
+                                    <span className="col-span-2 font-medium break-all">{file?.path || file?.folderPath}</span>
                                     
                                     <span className="text-gray-500">Size:</span>
                                     <span className="col-span-2 font-medium">
@@ -59,11 +59,11 @@ export default function PropertiesModal({showProperties,setShowProperties,file})
                                     </span>
 
                                     <span className="text-gray-500">Extension:</span>
-                                    <span className="col-span-2 font-medium">{file?.extension}</span>
+                                    <span className="col-span-2 font-medium">{file?.extension}</span>  
+
                                     
-                                    <span className="text-gray-500">Key:</span>
-                                    <span className="col-span-2 font-medium break-all">{file?.Key}</span>
-                                    
+                                    {file?.prompt && <span className="text-gray-500">Prompt: </span>}
+                                    {file?.prompt && <span className="col-span-2 font-medium">{file?.prompt}</span>  }
                                     
                                     <span className="text-gray-500">Last Modified:</span>
                                     <span className="col-span-2 font-medium">

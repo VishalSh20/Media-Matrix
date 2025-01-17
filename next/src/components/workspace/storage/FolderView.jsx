@@ -11,6 +11,7 @@ import FileUploader from '../FileUploader';
 import FolderPropertiesModal from '../FolderProperties';
 import FolderCreateDialog from '../FolderCreateDialog';
 import DeleteConfirmationModal from '../DeleteConfirmationModal';
+import axios from 'axios';
 
 export default function FolderView() {
   const {user} = useUser();
@@ -35,7 +36,8 @@ export default function FolderView() {
       return;
     } 
 
-    baseApi.delete(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/folder?key=users/${user?.id}${currentPath}`)
+    const deleteUrl = `/api/folder?userId=${user?.id}&folderPath=${currentPath}`;
+    axios.delete(deleteUrl)
     .then((res)=>{
       toast.success("Folder deleted successfully");
       setInterval(()=>{
@@ -43,7 +45,7 @@ export default function FolderView() {
       },1000);
     })
     .catch((error)=>{
-      toast.error("Something went wrong while deleting folder-"+(error.response.data.message || error.message));
+      toast.error("Something went wrong while deleting folder-"+(error.response?.data?.message || error.message));
     })
     .finally(()=>{
       setShowDeleteConfirm(false);
@@ -54,17 +56,14 @@ export default function FolderView() {
     const fetchContents = () => {  
         setLoading(true);
         setError(null);
-       baseApi.get(
-          `${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/contents?key=users/${user?.id}${currentPath}`
-        )
+      axios.get(`/api/contents?userId=${user?.id}&path=${currentPath}`)
         .then((res)=>{
-            const response = res.data;
-            const responseData = response.data;
-            console.log(responseData);
-            setContents(responseData);
+           const responseData = res.data;
+           console.log(responseData);
+           setContents(responseData);
         })
         .catch((error)=>{
-        const errorMessage = error.response.data.message || "Something went wrong while fetching contents- "+error.message;
+        const errorMessage = error.response?.data?.message || "Something went wrong while fetching contents- "+error.message;
         setError(errorMessage);
         })
         .finally(()=>{
@@ -141,7 +140,7 @@ export default function FolderView() {
         <div className="flex flex-col gap-2">
             <h2 className="text-xl font-bold">Folders</h2>
             <div className="flex flex-wrap gap-4">
-                {contents.folders.length > 0 ?
+                {contents?.folders?.length > 0 ?
                 contents.folders.map((folder,index)=>{
                     return <FolderBlock folder={folder} key={index}/>
                 })
@@ -158,7 +157,7 @@ export default function FolderView() {
       <div className="flex flex-col gap-2">
         <h2 className="text-xl font-bold">Images</h2>
         <div className="flex flex-wrap gap-4">
-            {contents.images.length > 0 ?
+            {contents?.images.length > 0 ?
             contents.images.map((image,index)=>{
                 return <ImageBlock image={image} key={index}/>
             })

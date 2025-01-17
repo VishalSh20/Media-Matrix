@@ -107,23 +107,6 @@ export default function Home() {
       </Head>
 
       <div className="min-h-screen bg-black text-white">
-        <nav className="flex items-center justify-between p-4 border-b border-gray-800">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
-            <span className="text-xl font-bold">Media Matrix</span>
-          </Link>
-          <div className="flex items-center gap-6">
-            <Link href="/blog" className="hover:text-gray-300">Blog</Link>
-            <Link href="/tools" className="hover:text-gray-300">Tools</Link>
-            <Link href="/community" className="hover:text-gray-300">Community</Link>
-            <Link href="/affiliate" className="hover:text-gray-300">Affiliate</Link>
-            <Link href="/api" className="hover:text-gray-300">API</Link>
-            <Link href="/creators" className="hover:text-gray-300">Creators</Link>
-            <button className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-800">Sign in</button>
-            <button className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200">Launch App</button>
-          </div>
-        </nav>
-
         <main>
           <section className="px-4 py-16 text-center">
             <h1 className="text-6xl font-bold mb-6">Media Matrix Art Generator</h1>

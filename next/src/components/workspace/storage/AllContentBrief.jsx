@@ -4,6 +4,7 @@ import { baseApi } from "../../../../axios.config.js";
 import { FolderOpenIcon, ImageIcon, Loader2 } from "lucide-react";
 import FolderBlock from "../FolderBlock.jsx";
 import ImageBlock from "../ImageBlock.jsx";
+import axios from "axios";
 
 function AllContentBrief() {
    const {user,isLoaded} = useUser();
@@ -17,17 +18,12 @@ function AllContentBrief() {
             if (isLoaded && user.id) {
                 setLoading(true);
                 setError(null);
-                setContent({images: [], videos: [], folders: []});
-                Promise.all([
-                    baseApi.get(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/media?userId=${user?.id}`),
-                    baseApi.get(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/contents?key=users/${user?.id}/`)
-                ])
-                .then(([mediaRes, folderRes]) => {
-                    setContent({
-                        images: mediaRes.data.data.images,
-                        videos: mediaRes.data.data.videos,
-                        folders: folderRes.data.data.folders
-                    });
+                setContent({images: [], videos: [], audios:[], folders: []});
+                axios
+                .get(`/api/contents?userId=${user.id}&path=/&all=true`)
+                .then((response) => {
+                    const { images, videos, audios, folders } = response.data;
+                    setContent({ images, videos,audios, folders });
                 })
                 .catch((err) => {
                     const errorMessage = err.response?.data?.message || `An error occurred: ${err.message}`;

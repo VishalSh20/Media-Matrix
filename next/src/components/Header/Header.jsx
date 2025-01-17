@@ -1,45 +1,55 @@
 "use client"
 import { useRouter } from "next/navigation";
 import {UserButton,useAuth} from "@clerk/nextjs";
+import Link from "next/link";
 
 
 export default function Header() {
     const {user,isSignedIn} = useAuth();
-    const allTabs = ["Home", "Features", "Pricing", "Contact"];
+    const allTabs = ["Home", "Tools", "API", "Contact"];
     const router = useRouter();
     return (
-        <div className="flex justify-between w-full p-4 mb-4 header">
-            <h2 className="text-2xl font-bold text-violet-400">Media-Matrix</h2>
-            <div className="flex gap-4">
-                {allTabs.map((tab) => (
-                    <a href={`/${tab.toLowerCase()}`} key={tab} className={` hover:text-gray-800 hover:scale-105 transition-all duration-200 ${tab === "Home" ? "text-violet-400" : "text-gray-600"} `}>
-                        {tab}
-                    </a>
-                ))}
-            </div>
-                {
-                    isSignedIn ? (
-                        <UserButton />
-                    ) : (
-                        <div className="flex gap-4">
-            <button 
-            className="bg-violet-400 text-white px-4 py-2 rounded-md hover:bg-violet-500 transition-all duration-200"
-                onClick={()=>{
-                    router.push("/sign-in")
-                }}
-            >
-                Login
-            </button>
-            <button 
-            className="bg-violet-400 text-white px-4 py-2 rounded-md hover:bg-violet-500 transition-all duration-200"
-                onClick={()=>{
-                    router.push("/sign-up")
-                }}
-            >
-                        Sign Up
-                    </button>
+            <nav className="flex w-full items-center justify-between p-4 border-b border-gray-800">
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+            <span className="text-xl font-bold">Media Matrix</span>
+          </Link>
+          <div className="flex items-center gap-6">
+            {
+                allTabs.map((tab,index)=>{
+                    return(
+                        <Link key={index} href={`/${tab.toLowerCase()}`} className="text-gray-400 hover:text-white">{tab}</Link>
+                    )
+                })
+            }
+            {
+                isSignedIn ?
+                <div className="flex gap-4 items-center">
+                    <button
+                    className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200"
+                    onClick={()=>{
+                        router.push("/workspace");
+                    }}
+                    >Workspace</button>
+                    <UserButton />
                 </div>
-            )}
-        </div>
+                :
+                <div className="flex gap-4 items-center">
+                    <Link href="/sign-up">
+                        <button 
+                        className="px-4 py-2 border border-gray-600 rounded-lg hover:bg-gray-800">
+                        Sign up
+                        </button>
+                    </Link>
+                    <Link href="/sign-in">
+                        <button
+                        className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-200"
+                        >Sign in</button>
+                    </Link>
+                </div>
+            }
+                
+          </div>
+        </nav>
     )
 }

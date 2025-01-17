@@ -150,17 +150,15 @@ export const getContentList = async (req,res) => {
         if(!key.endsWith("/"))
             key = key + "/";
 
-        const listOptions = {
+        const pathDataRetrievalCommand = new ListObjectsV2Command({
             Bucket:process.env.AWS_BUCKET_NAME,
-            Prefix:key
-        };
-        const command = new ListObjectsV2Command(listOptions);
-        const response = await s3Client.send(command);
-        const contents = response.Contents || [];
-
-        let files = contents.filter(content => {
-            return !content.Key.endsWith("/") && content.Key.lastIndexOf("/") === key.length-1;
+            Prefix:key,
+            Delimiter:"/"
         });
+
+        const pathDataRetrievalResponse = await s3Client.send(pathDataRetrievalCommand);
+
+        const files = pathDataRetrievalResponse.Contents || [];
         for(let file of files){
             const getCommand = new GetObjectCommand({
                 Bucket:process.env.AWS_BUCKET_NAME,
@@ -176,29 +174,30 @@ export const getContentList = async (req,res) => {
         const images = files ? files.filter(file => validImageTypes.includes(`image/${file.extension}`)) : [];
 
 
-        let folders = contents.filter(content => {
-            return content.Key.endsWith("/") && content.Key.substring(0,content.Key.length-1).lastIndexOf("/") === key.length-1;
-        }).map(folder => {
+        let folders = (pathDataRetrievalResponse.CommonPrefixes || [])?.map(folder => {
+            const prefix = folder.Prefix;
             return {
-                key:folder.Key,
-                path:folder.Key.substring(folder.Key.indexOf('/',folder.Key.indexOf('/')+1)),
-                name:folder.Key.substring(folder.Key.substring(0,folder.Key.lastIndexOf("/")).lastIndexOf("/")+1),
+                key:prefix,
+                path:prefix.substring(prefix.indexOf('/',prefix.indexOf('/')+1)),
+                name:prefix.substring(prefix.substring(0,prefix.length-1).lastIndexOf("/")+1),
                 Size:0,
-                lastModified:folder.LastModified
             }
         });
         
         let totalSize = 0;
-        for(let content of contents){
-            totalSize += content.Size;
+        for(let file of files){
+            totalSize += file.Size;
         }
-        if(contents.length>0){
-            for(let folder of folders){
-                for(let content of contents){
-                    if(content.Key.startsWith(folder.path)){
-                    folder.Size += content.Size;
-                }
-                }}
+        for(let folder of folders){
+            const folderDataRetrievalCommand = new ListObjectsV2Command({
+                Bucket:process.env.AWS_BUCKET_NAME,
+                Prefix:folder.key,
+            });
+            const folderDataRetrievalResponse = await s3Client.send(folderDataRetrievalCommand);
+            const folderFiles = folderDataRetrievalResponse.Contents || [];
+            for(let file of folderFiles){
+                folder.Size += file.Size;
+            }
         }
         
         return res.status(200).json({
@@ -211,11 +210,11 @@ export const getContentList = async (req,res) => {
                 Key:key,
                 name:key.substring(0,key.lastIndexOf("/")).substring(key.lastIndexOf("/")+1),
                 path:key.substring(key.indexOf("/",key.indexOf("/")+1)),
-                MaxKeys:response.MaxKeys,
-                IsTruncated:response.IsTruncated,
-                ContinuationToken:response.ContinuationToken,
-                NextContinuationToken:response.NextContinuationToken,
-                StartAfter:response.StartAfter
+                MaxKeys:pathDataRetrievalResponse.MaxKeys,
+                IsTruncated:pathDataRetrievalResponse.IsTruncated,
+                ContinuationToken:pathDataRetrievalResponse.ContinuationToken,
+                NextContinuationToken:pathDataRetrievalResponse.NextContinuationToken,
+                StartAfter:pathDataRetrievalResponse.StartAfter
             }});
     } catch (error) {
         console.error(error);

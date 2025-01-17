@@ -44,13 +44,10 @@ export default function FolderPropertiesModal({showProperties,setShowProperties,
                             <div className="space-y-4">
                                 <div className="grid grid-cols-3 gap-2 text-sm">
                                                                  
-                                    <span className="text-gray-500">Path:</span>
+                                    <span>Path:</span>
                                     <span className="col-span-2 font-medium break-all">{folder?.path}</span>
-
-                                    <span className="text-gray-500">Key:</span>
-                                    <span className="col-span-2 font-medium">{folder?.Key}</span>
                                     
-                                    <span className="text-gray-500">Total Size:</span>
+                                    <span>Total Size:</span>
                                     <span className="col-span-2 font-medium">
                                         {(folder?.totalSize / 1024).toFixed(2)} KB
                                     </span>

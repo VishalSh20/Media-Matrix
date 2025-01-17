@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,13 +7,146 @@ datasource db {
   url      = env("POSTGRES_URL")
 }
 
-model User{
-  id String @id String
-  email String @unique
-  password String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name String
-  credits Int @default(0)
+enum FILETYPE {
+  // Video Types
+  VIDEO_MP4
+  VIDEO_WEBM 
+  VIDEO_OGG
+  VIDEO_MOV
+  VIDEO_AVI
+
+  // Image Types
+  IMAGE_JPEG
+  IMAGE_PNG
+  IMAGE_GIF
+  IMAGE_SVG
+  IMAGE_WEBP
+  IMAGE_TIFF
+  IMAGE_BMP
+
+  // Audio Types
+  AUDIO_MP3
+  AUDIO_WAV
+  AUDIO_OGG
+  AUDIO_AAC
+  AUDIO_M4A
+  AUDIO_FLAC
+
+  // Document Types
+  DOCUMENT_PDF
+  DOCUMENT_TXT
+  DOCUMENT_SRT
+  DOCUMENT_VTT
+  DOCUMENT_JSON
 }
 
+enum ProjectStatus {
+  DRAFT
+  PROCESSING
+  COMPLETE
+  FAILED
+}
+
+model User {
+  id                     String             @id
+  email                  String             @unique
+  username               String             @unique
+  name                   String
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  imageGenCredits        Int                @default(30)
+  videoCraftStoryCredits Int                @default(300)
+  videoCraftSceneCredits Int                @default(0)
+  audioGenerationCredits Int                @default(1000)
+  transcriptionCredits   Int                @default(600)
+  files                  File[]
+  videoStoryProjects     VideoStoryProject[]
+  videoSceneProjects     VideoSceneProject[]
+}
+
+model File {
+  id                String           @id @default(cuid())
+  Key               String           @unique  // S3 key
+  Size              Int
+  name              String
+  type              FILETYPE
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  folderPath        String?          // New field to maintain folder structure
+  assetScenes       AssetScene[]
+  videoSceneProject VideoSceneProject?
+  prompt            String?
+
+  @@index([userId])
+}
+
+model VideoStoryProject {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  status      ProjectStatus
+  description String       // Story description
+  tone        String?
+  theme       String?
+  narrator    String?
+  duration    Float
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  scenes      Scene[]
+
+  @@index([userId])
+}
+
+model VideoSceneProject {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  status      ProjectStatus
+  prompt      String       // Scene generation prompt
+  duration    Float?       // Optional duration constraint
+  fileId      String      @unique // The generated video file
+  file        File        @relation(fields: [fileId], references: [id])
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+model Scene {
+  id                 String            @id @default(cuid())
+  videoStoryProjectId String
+  videoStoryProject  VideoStoryProject @relation(fields: [videoStoryProjectId], references: [id], onDelete: Cascade)
+  sceneOrder         Int
+  text              String            // Narration text
+  startTime         Float             // Start time in seconds
+  duration          Float             // Duration in seconds
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  assets            AssetScene[]
+
+  @@index([videoStoryProjectId])
+}
+
+model AssetScene {
+  id        String    @id @default(cuid())
+  sceneId   String
+  scene     Scene     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  fileId    String
+  file      File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  assetType AssetType
+  order     Int?      // For ordering images within a scene
+  duration  Float?    // For image duration within scene
+  startTime Float?    // Start time within scene
+
+  @@unique([sceneId, fileId])
+  @@index([sceneId])
+  @@index([fileId])
+}
+
+enum AssetType {
+  IMAGE
+  AUDIO
+  SUBTITLE
+}

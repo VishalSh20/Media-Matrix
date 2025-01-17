@@ -6,6 +6,8 @@ import serverless from "serverless-http";
 import express from "express";
 import cors from "cors";
 import storageRoutes from "./src/routes/storage.routes.js";
+import imageRoutes from "./src/routes/image.routes.js";
+import videoRoutes from "./src/routes/video.routes.js";
 
 const app = express();
 app.use(cors());
@@ -14,6 +16,13 @@ app.use(express.urlencoded({extended:true}));
 
 app.use("/storage",(_,res,next)=> {
   storageRoutes(_,res,next)
+});
+
+app.use("/image",(req,res,next)=> {
+  imageRoutes(req,res,next)
+});
+app.use("/video",(req,res,next)=> {
+  videoRoutes(req,res,next)
 });
 
 app.get("/", (_, res, next) => {

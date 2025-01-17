@@ -19,6 +19,8 @@ import {
 } from 'lucide-react'
 import PropertiesModal from './FileProperties.jsx';
 import DeleteConfirmationModal from './DeleteConfirmationModal.jsx';
+import {toast, Toaster } from 'react-hot-toast';
+import Image from 'next/image';
 
 ImageViewerModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
@@ -39,16 +41,21 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
     const handleSave = ()=>{
         setIsEditing(false);
         setIsSaving(true);
-        const oldKey = imagePrompt.Key;
-        const newKey = imagePrompt.Key.replace(imagePrompt.filename,name+'.'+imagePrompt.extension);
-        const saveUrl = `${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/media?userId=${user?.id}&oldKey=${oldKey}&newKey=${newKey}`;
-        baseApi.put(saveUrl)
+        const updationData = {
+          userId: user?.id,
+          fileKey: imagePrompt.Key,
+          updates:{name: name}
+        }
+        
+        baseApi.put(`/api/file`,updationData)
         .then((res)=>{
-            console.log(res);
-            window.location.reload();
+            toast.success("Filename updated successfully");
+            setTimeout(()=>{
+                window.location.reload();
+            },1000);
         })
         .catch((err)=>{
-            console.log(err);
+            toast.error("Error updating filename:" + err.message);
             setName(imagePrompt.name)
         })
         .finally(()=>{
@@ -57,18 +64,19 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
     }
 
     const handleDelete = ()=>{
-        const deleteUrl = `${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/media?key=${imagePrompt.Key}`;
+        const deleteUrl = `/api/file?fileKey=${imagePrompt.Key}&userId=${user?.id}`;
         console.log("Trying to delete");
         setIsDeleting(true);
         baseApi.delete(deleteUrl)
         .then((res)=>{
-            console.log(res);
+            toast.success("File deleted successfully");
             setTimeout(()=>{
                 window.location.reload();
             },1000);
         })
         .catch((err)=>{
             console.log(err);
+            toast.error("Error deleting file:" + err.message);
         })
         .finally(()=>{
             setIsDeleting(false);
@@ -121,7 +129,7 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                     !isEditing
                     ?
                     <div className="flex gap-4">
-                        <h1 className="text-lg font-bold text-gray-700">{imagePrompt.filename}</h1>
+                        <h1 className="text-lg font-bold text-gray-700">{imagePrompt.name}</h1>
                         <Edit3 size={18} className="text-gray-700 cursor-pointer" onClick={()=>{
                             setIsEditing(true);
                             setName(imagePrompt.name);
@@ -141,13 +149,12 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                   <div className="flex items-center gap-4">
                   <button
                       className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-200 rounded-md transition-colors"
-                      title="Open in folder"
+                      title="Show Properties"
                       onClick={()=>{
                         setShowProperties(true);
                       }}
                     >
-                      <InfoIcon size={18} />
-                      Properties
+                      <InfoIcon size={18}/>
                     </button>
                     <button
                       className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-200 rounded-md transition-colors"
@@ -157,14 +164,12 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                       }}
                     >
                       <FolderOpen size={18} />
-                      Open in Folder
                     </button>
                     <button
                       className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-200 rounded-md transition-colors"
                       title="Open in editor"
                     >
                       <ExternalLink size={18} />
-                      Open in Editor
                     </button>
                     <button
                       className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
@@ -172,7 +177,6 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                       onClick={() => setShowDeleteConfirm(true)}
                     >
                       <Trash2 size={18} />
-                      Delete
                     </button>
                   </div>
                   <button
@@ -184,12 +188,16 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                 </div>
 
                 {/* Image Container */}
-                <div className="h-[calc(90vh-3.5rem)] w-full overflow-auto p-4">
-                  <img
+                <div className="flex justify-center items-center h-[calc(90vh-3.5rem)] w-full overflow-auto p-4 bg-gray-100">
+                <div className="relative max-h-full max-w-full overflow-hidden">
+                  <Image
                     src={imagePrompt.url}
-                    alt={imagePrompt.name}
-                    className="max-w-full h-auto mx-auto"
+                    alt={imagePrompt.name || "image"}
+                    width={800} // Adjust as needed
+                    height={600} // Adjust as needed
+                    objectFit="contain" // Ensure the image stays within its container
                   />
+                </div>
                 </div>
               </DialogPanel>
             </TransitionChild>
@@ -198,6 +206,7 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
       </Dialog>
       {showDeleteConfirm && <DeleteConfirmationModal showModal={showDeleteConfirm} setShowModal={setShowDeleteConfirm} handleDelete={handleDelete} />}
       {showProperties && <PropertiesModal showProperties={showProperties} setShowProperties={setShowProperties} file={imagePrompt}/>}
+      <Toaster/>
     </Transition>
   )
 }

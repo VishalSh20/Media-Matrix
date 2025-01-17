@@ -5,6 +5,7 @@ import { baseApi } from '../../../axios.config';
 import {useUser} from '@clerk/nextjs';
 import {toast,Toaster} from 'react-hot-toast';
 import {useState} from 'react';
+import axios from 'axios';
 
 export default function FolderCreateModal({ isOpen, setIsOpen, currentPath = "/" }) {
     const {user} = useUser();
@@ -13,9 +14,13 @@ export default function FolderCreateModal({ isOpen, setIsOpen, currentPath = "/"
     const handleCreate = (e) => {
         e.preventDefault();
         setSaving(true);
-        const creationUrl = `${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/storage/folder?key=users/${user?.id}${currentPath}${folderName}`;
-        console.log(creationUrl);
-        baseApi.post(creationUrl)
+        axios.post(`/api/folder`,
+            {
+                userId: user?.id,
+                path: currentPath,
+                name: folderName
+            }
+        )
         .then((res) => {
             toast.success("Folder created successfully");
             setTimeout(() => {
