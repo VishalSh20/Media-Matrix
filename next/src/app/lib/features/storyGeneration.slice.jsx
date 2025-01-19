@@ -7,6 +7,7 @@ const initialState = {
     duration: '',
     narrator: '',
     animationTheme: '',
+    aspectRatio:''
   },
   isGenerating: false,
   error:null

@@ -11,10 +11,10 @@ export default function Step2Content() {
   const audioRefs = useRef({}); // Stores refs for all audio elements
 
   const voices = [
-    { id: "joanna", name: "Joanna (Female)", preview: "/assets/videoGeneration/story/voices/joanna.mp3" },
-    { id: "matthew", name: "Matthew (Male)", preview: "/assets/videoGeneration/story/voices/matthew.mp3" },
-    { id: "salli", name: "Salli (Female)", preview: "/assets/videoGeneration/story/voices/salli.mp3" },
-    { id: "joey", name: "Joey (Male)", preview: "/assets/videoGeneration/story/voices/joey.mp3" },
+    { id: "Joanna", name: "Joanna (Female)", preview: "/assets/videoGeneration/story/voices/joanna.mp3" },
+    { id: "Matthew", name: "Matthew (Male)", preview: "/assets/videoGeneration/story/voices/matthew.mp3" },
+    { id: "Salli", name: "Salli (Female)", preview: "/assets/videoGeneration/story/voices/salli.mp3" },
+    { id: "Joey", name: "Joey (Male)", preview: "/assets/videoGeneration/story/voices/joey.mp3" },
   ];
 
   useEffect(() => {

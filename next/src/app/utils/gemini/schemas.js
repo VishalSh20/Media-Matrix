@@ -28,11 +28,21 @@ export const IMAGE_GENERATION_SCHEMA = {
     }
 };
 
-export const SCENE_IMAGE_PROMPT_SCHEMA = {
+export const SCENE_IMAGE_GENERATION_SCHEMA = {
     type: SchemaType.ARRAY,
-    description: "Array of 1 to 4 progressive image prompts based on a scene",
+    description: "Array of generated image prompts with duration and description",
     items: {
-        type: SchemaType.STRING,
-        description: "A detailed image generation prompt based on the scene and narration"
-    } 
+        type: SchemaType.OBJECT,
+        properties: {
+            prompt: {
+                type: SchemaType.STRING,
+                description: "A detailed image generation prompt aligned with the scene description and animation theme",
+            },
+            duration: {
+                type: SchemaType.NUMBER,
+                description: "Duration in milliseconds for which this prompt corresponds in the video",
+            },
+        },
+        required: ["prompt", "duration"],
+    },
 };

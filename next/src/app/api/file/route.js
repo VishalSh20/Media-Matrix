@@ -54,6 +54,20 @@ export async function POST(req) {
       );
     }
 
+    // check if user exists
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId
+      }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
     // Convert file to buffer for S3
     const buffer = Buffer.from(await file.arrayBuffer());
     const fileType = getFileType(file.type);
@@ -105,9 +119,9 @@ export async function POST(req) {
     return NextResponse.json({message: 'File uploaded successfully',fileRecord},{status: 200});
 
   } catch (error) {
-    console.log(error.message);
+    console.log(error);
     return NextResponse.json(
-      { error: "Failed to upload file"+error.message },
+      { error: error.message },
       { status: 500 }
     );
   }

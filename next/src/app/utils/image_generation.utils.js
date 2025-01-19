@@ -16,11 +16,11 @@ const sanitizeFileName = (prompt) => {
     return sanitized || 'generated-image'; // Fallback if sanitized string is empty
 };
 
-export const generateImage = async (prompt, numImages = 1) => {
+export const generateImage = async (prompt,width=1024,height=1024, numImages = 1) => {
     try {
         const input = {
-            width: 1024,
-            height: 1024,
+            width: width,
+            height: height,
             prompt: prompt,
             scheduler: "K_EULER",
             num_outputs: numImages,

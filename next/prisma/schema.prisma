@@ -32,6 +32,10 @@ enum FILETYPE {
   AUDIO_M4A
   AUDIO_FLAC
 
+  // SUBTITLE Types
+  SUBTITLE_SRT
+  SUBTITLE_VTT
+
   // Document Types
   DOCUMENT_PDF
   DOCUMENT_TXT
@@ -42,9 +46,7 @@ enum FILETYPE {
 
 enum ProjectStatus {
   DRAFT
-  PROCESSING
   COMPLETE
-  FAILED
 }
 
 model User {
@@ -66,7 +68,7 @@ model User {
 
 model File {
   id                String           @id @default(cuid())
-  Key               String           @unique  // S3 key
+  Key               String           @unique  
   Size              Int
   name              String
   type              FILETYPE
@@ -74,27 +76,37 @@ model File {
   updatedAt         DateTime         @updatedAt
   userId            String
   user              User             @relation(fields: [userId], references: [id])
-  folderPath        String?          // New field to maintain folder structure
+  folderPath        String?          
   assetScenes       AssetScene[]
   videoSceneProject VideoSceneProject?
   prompt            String?
+  exportForScene    Scene?           @relation("SceneExports", fields: [sceneExportId], references: [id])
+  sceneExportId     String?
 
   @@index([userId])
+  @@index([sceneExportId])
+}
+
+enum AspectRatio {
+  LANDSCAPE   // 16:9
+  PORTRAIT    // 9:16
+  SQUARE      // 1:1
 }
 
 model VideoStoryProject {
-  id          String       @id @default(cuid())
-  userId      String
-  user        User         @relation(fields: [userId], references: [id])
-  status      ProjectStatus
-  description String       // Story description
-  tone        String?
-  theme       String?
-  narrator    String?
-  duration    Float
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  scenes      Scene[]
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id])
+  status          ProjectStatus
+  description     String       
+  tone            String?
+  animationTheme  String?
+  narrator        String?
+  duration        Int
+  aspectRatio     AspectRatio  @default(PORTRAIT)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  scenes          Scene[]
 
   @@index([userId])
 }
@@ -104,9 +116,9 @@ model VideoSceneProject {
   userId      String
   user        User         @relation(fields: [userId], references: [id])
   status      ProjectStatus
-  prompt      String       // Scene generation prompt
-  duration    Float?       // Optional duration constraint
-  fileId      String      @unique // The generated video file
+  prompt      String       
+  duration    Int?         // Changed from Float? to Int?
+  fileId      String      @unique 
   file        File        @relation(fields: [fileId], references: [id])
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
@@ -119,12 +131,14 @@ model Scene {
   videoStoryProjectId String
   videoStoryProject  VideoStoryProject @relation(fields: [videoStoryProjectId], references: [id], onDelete: Cascade)
   sceneOrder         Int
-  text              String            // Narration text
-  startTime         Float             // Start time in seconds
-  duration          Float             // Duration in seconds
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  assets            AssetScene[]
+  description        String
+  narration          String            
+  startTime          Int               @default(0)
+  duration           Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  assets             AssetScene[]
+  exports            File[]            @relation("SceneExports")
 
   @@index([videoStoryProjectId])
 }
@@ -136,9 +150,9 @@ model AssetScene {
   fileId    String
   file      File      @relation(fields: [fileId], references: [id], onDelete: Cascade)
   assetType AssetType
-  order     Int?      // For ordering images within a scene
-  duration  Float?    // For image duration within scene
-  startTime Float?    // Start time within scene
+  order     Int?      
+  duration  Int?      // Changed from Float? to Int?
+  startTime Int?      // Changed from Float? to Int?
 
   @@unique([sceneId, fileId])
   @@index([sceneId])
@@ -148,5 +162,7 @@ model AssetScene {
 enum AssetType {
   IMAGE
   AUDIO
+  VIDEO
   SUBTITLE
+  DOCUMENT
 }
