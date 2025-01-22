@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import AllContentBrief from '@/components/workspace/storage/AllContentBrief';
 import AllImages from '@/components/workspace/storage/AllImages';
 import FolderView from '@/components/workspace/storage/FolderView';
+import AllVideos from '@/components/workspace/storage/AllVideos';
 function Page({params}) {
     const tab = use(params).tab;
     const [selectedTab, setSelectedTab] = useState(tab || "all");
@@ -40,8 +41,8 @@ function Page({params}) {
             {selectedTab === "all" && <AllContentBrief/>}
             {selectedTab === "images" && <AllImages/>}
             {selectedTab === "folders" && <FolderView/>}
-            {selectedTab === "videos" && <div>Videos Component (Coming Soon)</div>}
-            {selectedTab === "audio" && <div>Audio Component (Coming Soon)</div>}
+            {selectedTab === "videos" && <AllVideos/>}
+            {selectedTab === "audio" && <AllAudio/>}
         </div>
     )
 }
