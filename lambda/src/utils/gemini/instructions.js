@@ -83,166 +83,186 @@ Theme: Cinematic
 ### Notes:
 Provide a clear and concise output, ensuring it is ready for direct use in Stable Diffusion Turbo 3.5. Focus on creating visually compelling and style-consistent prompts.`;
 
-export const SCENE_GENERATION_INSTRUCTIONS = `Generate an array of scenes for a video based on user input. Each scene should include a description of the scene (not an image prompt) and a narration.",
-    input: {
-      "description": "A detailed text description of the video topic or concept.",
-      "tone": "Specifies the desired tone of the video. Possible values: 'Illustration', 'Funny', 'Satire', 'Dramatic', 'Professional', 'Casual', 'Emotional', 'Educational'.",
-      "duration": "Total length of the video, ranging between 15 and 300 seconds."
-    },
-    #outputRequirements:Divide the video into logical scenes based on the total duration. Each scene should have a balanced duration based on its significance.Provide the array of scenes with each scene described as =>
-      "sceneDetails": {
-        "sceneDescription": "A concise and vivid textual description of the scene's content.",
-        "narration": "Corresponding voice-over text for the scene, matching the tone and description."
-      },
-      
-   #toneSpecificInstructions: 
-        "Funny": "Incorporate humor or lighthearted elements in the scene description and narration.",
-        "Dramatic": "Focus on creating tension, vivid imagery, and high emotional stakes.",
-        "Educational": "Ensure the narration and scene descriptions are informative and clear."
+export const SCENE_GENERATION_INSTRUCTIONS = `
+Generate an array of scenes for a video based on user input. Each scene must include:
+1. A vivid and concise description of the scene (text only, no image prompts).
+2. A corresponding narration text that uses natural pacing, with pauses where appropriate, to make the voiceover sound engaging and human-like.
 
-   #additionalGuidelines: 
-        -Do not include prompts for generating images or any visual elements
-        -Maintain logical and chronological flow between scenes
-        -Keep the language engaging and relevant to the selected tone
+# Input Requirements:
+- "description": "A detailed text description of the video topic or concept."
+- "tone": "Specifies the desired tone of the video. Possible values: 'Illustration', 'Funny', 'Satire', 'Dramatic', 'Professional', 'Casual', 'Emotional', 'Educational'."
+- "duration": "Total length of the video, ranging between 15 and 300 seconds."
 
-  "examples": {
-    "dramaticExample": {
-      "input": {
-        "description": "A story about a brave knight rescuing a princess from a dragon.",
-        "tone": "Dramatic",
-        "duration": 120
-      },
-      "output": {
-        "scenes": [
-          {
-            "sceneDescription": "The knight gallops through a dense forest, the morning sun casting long shadows.",
-            "narration": "Our brave knight ventures into the mystical forest, his heart set on saving the princess."
-          },
-          {
-            "sceneDescription": "The knight arrives at a roaring river, using a fallen tree as a makeshift bridge.",
-            "narration": "With courage and precision, he crosses the treacherous waters."
-          },
-          {
-            "sceneDescription": "The dragon's cave looms ahead, smoke billowing from its entrance.",
-            "narration": "The air grows thick with tension as the knight prepares for the final battle."
-          },
-          {
-            "sceneDescription": "The knight confronts the dragon, sword gleaming as the battle ensues.",
-            "narration": "In a clash of strength and bravery, the knight faces the fearsome beast."
-          },
-          {
-            "sceneDescription": "The princess, freed from her chains, embraces the knight as the dragon lies defeated.",
-            "narration": "With victory in hand, the hero and the princess emerge from the cave, their tale destined for legend."
-          }
-        ]
-      }
-    },
-    "educationalExample": {
-      "input": {
-        "description": "The economic growth of China in the last century.",
-        "tone": "Educational",
-        "duration": 180
-      },
-      "output": {
-        "scenes": [
-          {
-            "sceneDescription": "A map of China in the early 20th century, showing its largely agrarian economy and underdeveloped infrastructure.",
-            "narration": "In the early 1900s, China was an agrarian society with limited industrial development, struggling to modernize amidst internal strife and foreign influences."
-          },
-          {
-            "sceneDescription": "The establishment of the People's Republic of China in 1949, with visuals of major infrastructure projects like dams and factories.",
-            "narration": "After 1949, the new government embarked on ambitious infrastructure projects, laying the groundwork for future growth."
-          },
-          {
-            "sceneDescription": "Deng Xiaoping introducing economic reforms in the 1980s, with factories and bustling cities emerging.",
-            "narration": "The economic reforms of the 1980s marked a turning point, opening China to global markets and fostering rapid industrialization."
-          },
-          {
-            "sceneDescription": "The rise of China's tech industry in the 21st century, with skyscrapers and advanced technologies prominently displayed.",
-            "narration": "By the 21st century, China had become a global leader in technology, innovation, and manufacturing, transforming its economy into the second-largest in the world."
-          },
-          {
-            "sceneDescription": "China's current position as an economic powerhouse, with trade routes, innovation hubs, and international collaborations highlighted.",
-            "narration": "Today, China plays a pivotal role in the global economy, driving progress and fostering international collaborations."
-          }
-        ]
-      }
-`
+# Scene Allocation Based on Video Duration:
+- **15 seconds**: 1 to 2 scenes (7-8 seconds per scene).
+- **30 seconds**: 2 to 3 scenes (10-15 seconds per scene).
+- **60 seconds**: 3 to 5 scenes (12-20 seconds per scene).
+- **120 seconds**: 4 to 6 scenes (20-30 seconds per scene).
+- **300 seconds**: 6 to 10 scenes (30-50 seconds per scene).
 
-export const SCENE_IMAGE_PROMPT_INSTRUCTIONS = `Image Prompt Generation Instructions
+# Output Requirements:
+1. Divide the video into logical scenes based on the total duration.
+2. Each scene should have:
+   - A balanced duration proportional to its importance in the story or concept.
+   - A narration that matches the tone and pace. (Assume an average narration speed of 30 words per 10 seconds.)
+   - Adequate pauses in the narration for emphasis and to make the voiceover more natural (e.g., add commas or periods where pauses are needed).
+3. Provide an array of scenes in this structure:
+   - "sceneDetails": {
+       "sceneDescription": "A concise and vivid textual description of the scene's content.",
+       "narration": "Voice-over text for the scene with natural pauses, matching the tone and description."
+     }
 
-The goal is to generate 1 to 4 progressive image prompts based on the provided input 1.sceneDescription, 2.narration, and 3.animationTheme. These prompts should align with the context of the scene, enhance the narrative, and reflect the selected animationTheme's stylistic elements.
-#Scene Progression:
-   -Divide the scene into logical progressions to tell a visual story. Each image prompt should build on the previous one.
-   -Ensure smooth transitions and continuity between prompts to make the sequence suitable for video creation.
-#Narration Alignment:
-   -Use the narration to identify the key elements, emotions, and focal points of the scene.
-   -Emphasize any actions, emotions, or specific descriptions mentioned in the narration.
-#AnimationTheme Specifics:
-   -Tailor the style and tone of the prompts to match the selected animationTheme.
-   -Refer to the animationTheme instructions below for detailed guidance.
-#Prompt Structure:
--Start with a clear description of the environment.
--Incorporate actions, characters, and details progressively.
--Use sensory elements such as colors, lighting, and textures to enhance the scene.
+# Tone-Specific Instructions:
+- "Funny": Add lighthearted humor, clever wordplay, or playful phrasing in both the scene description and narration.
+- "Dramatic": Use emotionally charged words and pacing to build tension and evoke vivid imagery.
+- "Educational": Ensure clarity, logical flow, and informative language in the narration and descriptions.
 
-#AnimationTheme Instructions:
-1. **Abstract:**  
-   - Focus on artistic interpretation over realism.  
-   - Use bold shapes, unexpected forms, and unusual colors.  
-   - Prioritize emotional or conceptual representation of the base prompt.  
+# Additional Guidelines:
+1. Do not include prompts for generating images or any other visual elements.
+2. Maintain a logical and chronological flow between scenes.
+3. Adjust the length of narration for each scene based on its allocated time, ensuring it feels natural and balanced.
+4. Use commas, periods, and other punctuation to indicate natural pauses in the narration.
+5. Number of scenes should align with the duration guidelines provided above.
 
-2. **Cartoonic:**  
-   - Simplified, exaggerated forms with clean lines.  
-   - Bright, flat colors and playful or humorous elements.  
-   - Characters and objects can be more stylized and animated.  
-
-3. **Anime:**  
-   - Influenced by Japanese animation style.  
-   - Highly expressive characters with large, detailed eyes.  
-   - Use soft color palettes, dynamic poses, and cinematic lighting.  
-
-4. **Fantasy:**  
-   - Enchanting and magical elements.  
-   - Incorporate mythical creatures, ethereal lighting, and whimsical landscapes.  
-   - Rich, textured details and a sense of wonder.  
-
-5. **Vintage:**  
-   - Nostalgic, old-fashioned style.  
-   - Use muted, sepia, or monochromatic tones.  
-   - Capture historical settings or elements inspired by past decades.  
-
-6. **Futuristic:**  
-   - Sleek, modern design with advanced technology.  
-   - Incorporate neon lights, metallic tones, and utopian or dystopian aesthetics.  
-   - Emphasize innovation and imaginative futurism.  
-
-7. **Modern Art:**  
-   - Artistic and experimental representation.  
-   - Use geometric patterns, minimalist or maximalist approaches, and bold color contrasts.  
-   - Emphasize creative interpretation over literal depiction.  
-
-8. **Dark:**  
-   - Moody and atmospheric.  
-   - Use shadowy settings, deep colors, and a sense of mystery or foreboding.  
-   - Evoke feelings of intrigue, danger, or drama.  
-
-9. **Colorful:**  
-   - Vibrant, saturated hues.  
-   - Celebrate a spectrum of colors to create an uplifting and dynamic image.  
-   - Focus on energy, joy, and vibrancy.  
-
-#Example Workflow:
-
+# Examples:
+## Dramatic Example:
 Input:
-Scene: A bustling marketplace in ancient China with merchants selling silk and spices.
-Narration: "The lively streets of ancient China were a hub of trade, filled with vibrant colors and the aroma of exotic spices."
-AnimationTheme: Vintage
+{
+  "description": "A story about a brave knight rescuing a princess from a dragon.",
+  "tone": "Dramatic",
+  "duration": 120
+}
+Output:
+{
+  "scenes": [
+    {
+      "sceneDescription": "The knight gallops through a dense forest, the morning sun casting long shadows.",
+      "narration": "Our brave knight ventures into the mystical forest. His heart is set on saving the princess."
+    },
+    {
+      "sceneDescription": "The knight arrives at a roaring river, using a fallen tree as a makeshift bridge.",
+      "narration": "With courage and precision, he crosses the treacherous waters, the sound of rushing currents filling the air."
+    },
+    {
+      "sceneDescription": "The dragon's cave looms ahead, smoke billowing from its entrance.",
+      "narration": "The air grows thick with tension, as the knight prepares for the final battle."
+    },
+    {
+      "sceneDescription": "The knight confronts the dragon, sword gleaming as the battle ensues.",
+      "narration": "In a clash of strength and bravery, the knight faces the fearsome beast."
+    },
+    {
+      "sceneDescription": "The princess, freed from her chains, embraces the knight as the dragon lies defeated.",
+      "narration": "With victory in hand, the hero and the princess emerge from the cave. Their tale is destined for legend."
+    }
+  ]
+}
 
-#Generated Image Prompts:
-Prompt 1: A crowded street in ancient China, with merchants displaying rolls of silk in muted tones. Wooden stalls line the streets, surrounded by soft, diffused sunlight and a sepia-toned atmosphere.
-Prompt 2: A close-up of a merchant offering colorful silk fabrics to a customer, intricate patterns on the fabrics blending with the historical ambiance. The customer wears traditional Chinese attire.
-Prompt 3: The perspective shifts to a spice stall, where jars of spices and herbs are carefully arranged. Subtle clouds of spice dust rise in the golden, sepia-lit air, adding a nostalgic touch.
-Prompt 4: A wide shot of the entire marketplace, showcasing the bustling activity of traders, customers, and vibrant goods, all under the soft glow of vintage lighting.
+## Educational Example:
+Input:
+{
+  "description": "The economic growth of China in the last century.",
+  "tone": "Educational",
+  "duration": 180
+}
+Output:
+{
+  "scenes": [
+    {
+      "sceneDescription": "A map of China in the early 20th century, showing its largely agrarian economy and underdeveloped infrastructure.",
+      "narration": "In the early 1900s, China was an agrarian society. Limited industrial development slowed its modernization efforts."
+    },
+    {
+      "sceneDescription": "The establishment of the People's Republic of China in 1949, with visuals of major infrastructure projects like dams and factories.",
+      "narration": "After 1949, the government launched ambitious infrastructure projects, laying the groundwork for future growth."
+    },
+    {
+      "sceneDescription": "Deng Xiaoping introducing economic reforms in the 1980s, with factories and bustling cities emerging.",
+      "narration": "The 1980s marked a turning point, as reforms opened China to global markets. Rapid industrialization followed."
+    },
+    {
+      "sceneDescription": "The rise of China's tech industry in the 21st century, with skyscrapers and advanced technologies prominently displayed.",
+      "narration": "By the 21st century, China had become a global leader in technology and manufacturing."
+    },
+    {
+      "sceneDescription": "China's current position as an economic powerhouse, with trade routes, innovation hubs, and international collaborations highlighted.",
+      "narration": "Today, China drives progress on the global stage. It fosters international collaborations and economic growth."
+    }
+  ]
+}
+`;
 
-`
+
+export const SCENE_IMAGE_PROMPT_INSTRUCTIONS = `
+# Image Prompt Generation Instructions
+
+The objective is to generate **1 to 4 image prompts** for a scene, ensuring that:
+1. **Total prompt durations exactly match the scene duration** (given in milliseconds).  
+2. **Number of prompts** aligns with the scene's complexity and duration:  
+   - **≤15 seconds (≤15000ms)**: 1-2 prompts.  
+   - **16-30 seconds (≤30000ms)**: 2-3 prompts.  
+   - **31-60 seconds (≤60000ms)**: 3-4 prompts.  
+   - **>60 seconds**: 4 prompts.  
+
+---
+
+## Input Parameters:
+1. **sceneDescription**: A detailed description of the scene.  
+2. **narration**: Voiceover text guiding the visuals.  
+3. **completeScript**: Full context of the story.  
+4. **duration**: Total duration of the scene (in milliseconds).  
+5. **animationTheme**: The artistic style to shape the visuals.  
+
+---
+
+## Key Requirements:
+### Image Prompts:
+1. Each prompt must:
+   - Reflect the narration and align with the animationTheme.
+   - Convey vivid sensory elements such as colors, lighting, and textures.
+   - Build progression, with each prompt telling part of the story visually.
+2. The **sum of durations** across all prompts **must equal the scene's total duration**.  
+
+### Scene Progression:
+- **Logical Stages**: Divide the scene into visual stages with smooth transitions.  
+- **Duration Allocation**: Assign proportional durations to each prompt, guided by narration pacing.  
+
+### AnimationTheme Guidelines:
+1. **Abstract**: Focus on bold, artistic interpretations using vibrant shapes and colors.  
+2. **Cartoonic**: Use playful, exaggerated forms with bright, flat colors.  
+3. **Anime**: Highlight dynamic poses, expressive characters, and cinematic effects.  
+4. **Fantasy**: Incorporate magical and mythical elements with enchanting visuals.  
+5. **Vintage**: Create nostalgic visuals using muted, sepia tones and historical elements.  
+6. **Futuristic**: Showcase sleek designs, neon lighting, and advanced technology.  
+7. **Modern Art**: Use experimental elements like geometric patterns and bold contrasts.  
+8. **Realistic**: Develop lifelike visuals with atmospheric lighting and deep colors.  
+9. **Colorful**: Emphasize vibrant hues and dynamic, uplifting energy.
+
+---
+
+## Example Input and Output:
+### Input:
+- **Scene Description**: "A lively forest where animals gather by a shimmering lake under a golden sunrise."  
+- **Narration**: "The forest wakes with the golden sunrise, animals gather by the lake, a tranquil harmony."  
+- **Complete Script**: "A journey through nature's beauty, exploring its peace and wonder."  
+- **Duration**: 20000ms (20 seconds).  
+- **AnimationTheme**: Fantasy.  
+
+### Output:
+1. {
+   prompt: "A magical forest illuminated by the golden sunrise, with sparkling dew on leaves and shimmering light piercing through trees.",
+   duration: 8000
+}
+2. {
+   prompt: "Animals gather peacefully by a shimmering lake, the water reflecting the warm, golden light of dawn.",
+   duration: 12000
+}
+
+---
+
+## IMPORTANT:
+1. Always verify the total duration matches the input duration.  
+2. Ensure logical progression and alignment with the narration and theme.  
+3. Avoid exceeding 4 prompts or leaving any duration unallocated.  
+4. Test for clarity, stylistic alignment, and visual storytelling consistency.
+`;

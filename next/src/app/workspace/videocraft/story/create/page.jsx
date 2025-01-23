@@ -1,29 +1,34 @@
 "use client";
 import React, { useState, useRef, use, useEffect} from "react";
+import { useRouter } from "next/navigation";
 import { ChevronRight, ChevronLeft, Volume2, Wand2 } from "lucide-react";
-import Step1Content from "@/components/workspace/videogen/story/create/Step1Content";
-import Step2Content from "@/components/workspace/videogen/story/create/Step2Content";
-import Step3Content from "@/components/workspace/videogen/story/create/Step3Content";
-import Step4Content from "@/components/workspace/videogen/story/create/Step4Content";
+import Step1Content from "@/components/workspace/videocraft/story/create/Step1Content";
+import Step2Content from "@/components/workspace/videocraft/story/create/Step2Content";
+import Step3Content from "@/components/workspace/videocraft/story/create/Step3Content";
+import Step4Content from "@/components/workspace/videocraft/story/create/Step4Content";
+import GeneratingComponent from "@/components/workspace/videocraft/story/create/GeneratingComponent";
 import { useSelector,useDispatch } from "react-redux";
 import {startGenerating,stopGenerating} from "@/app/lib/features/storyGeneration.slice";
-import { generateVideoStoryAssets } from "@/app/utils/video_story_generation.utils";
 import { useUser } from "@clerk/nextjs";
+import axios from "axios";
 
 const Page = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const {user} = useUser();
+  const router = useRouter();
   const dispatch = useDispatch();
   const storyOptions = useSelector((state) => state.storyGeneration.storyOptions);
   const isGenerating = useSelector((state) => state.storyGeneration.isGenerating);
   const handleStoryGeneration = async()=>{
     try {
       dispatch(startGenerating());
-      const res = await generateVideoStoryAssets(storyOptions,user.id);
-      const storyId = res.storyId;
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/generate/video`,{storyOptions,userId:user.id});
+      const storyId = res.data?.storyId;
+      console.log("Story ID:", storyId);
       setTimeout(() => {
-        router.push(`/workspace/videogen/story/${storyId}`);
+        router.push(`/workspace/videocraft/story/${storyId}`);
       }, 1000);
+      dispatch(stopGenerating());
     } catch (error) {
       console.error("Error generating story:", error.message);
       dispatch(stopGenerating(error.message));
@@ -69,7 +74,7 @@ const Page = () => {
   );
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-4xl mx-auto px-4 py-12 h-full bg-inherit">
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold mb-4 text-gray-200 flex items-center justify-center gap-3">
           <Wand2 className="w-8 h-8 text-blue-500" />

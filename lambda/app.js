@@ -1,13 +1,9 @@
-// uncomment this in development - also do the same in config.js
-// import { config } from "dotenv";
-// config();
-
+import dotenv from "dotenv";
+dotenv.config();
 import serverless from "serverless-http";
 import express from "express";
 import cors from "cors";
-import storageRoutes from "./src/routes/storage.routes.js";
-import imageRoutes from "./src/routes/image.routes.js";
-import videoRoutes from "./src/routes/video.routes.js";
+import generateRoutes from "./src/routes/generate.routes.js"
 
 const app = express();
 app.use(cors());
@@ -18,16 +14,13 @@ app.use("/storage",(_,res,next)=> {
   storageRoutes(_,res,next)
 });
 
-app.use("/image",(req,res,next)=> {
-  imageRoutes(req,res,next)
-});
-app.use("/video",(req,res,next)=> {
-  videoRoutes(req,res,next)
+app.use("/generate",(req,res,next)=> {
+  generateRoutes(req,res,next)
 });
 
 app.get("/", (_, res, next) => {
   return res.status(200).json({
-    message: "Hi from the root of the backend!",
+    message: "Hi from the root of the lambda!",
   });
 });
 

@@ -1,19 +1,9 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../../db/prisma_client.js";
 import { s3Client } from "../../../../aws/aws.config.js";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { GetObjectCommand , ListObjectsV2Command, DeleteObjectCommand} from "@aws-sdk/client-s3";
+import { getCloudFrontSignedUrl } from "../../../../aws/aws.config.js";
 import { Readable } from "stream";
-
-const generateSignedUrl = async (key) => {
-  const params = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: key,
-  };
-
-  const command = new GetObjectCommand(params);
-  return await getSignedUrl(s3Client,command, { expiresIn: 3600 });
-};
 
 const fetchTranscript = async (key) => {
   try {
@@ -70,6 +60,11 @@ export async function GET(req) {
             },
           },
         },
+        assets:{
+          include:{
+            file:true
+          }
+        }
       },
     });
 
@@ -79,31 +74,32 @@ export async function GET(req) {
 
     // Process assets
     for (const scene of story.scenes) {
-      const folders = {
-        images: [],
-        audio: [],
-        transcript: [],
-      };
-
-      for (const asset of scene.assets) {
-        const signedUrl = await generateSignedUrl(asset.file.Key);
-        asset.url = signedUrl;
-        delete asset.file;
-
-        if (asset.assetType === "DOCUMENT") {
-          const transcriptJson = await fetchTranscript(asset.file.Key);
-          asset.transcript = transcriptJson ? JSON.parse(transcriptJson) : null;
-          folders.transcript.push(asset);
-        } else if (asset.assetType === "IMAGE") {
-          folders.images.push(asset);
-        } else if (asset.assetType === "AUDIO") {
-          folders.audio.push(asset);
-        }
+      scene.images = scene.assets.filter((asset) => asset.assetType === "IMAGE");
+      for (const image of scene.images) {
+        const signedUrl = getCloudFrontSignedUrl(image.file.Key);
+        image.url = signedUrl;
+        delete image.file;
       }
-
-      // Replace scene.assets with the organized folder structure
-      scene.assets = folders;
+      delete scene.assets;
     }
+
+    // Process story assets
+    let transcripts = [], audios = [];
+    for (const asset of story.assets) {
+      if (asset.assetType === "DOCUMENT") {
+        const transcriptJson = await fetchTranscript(asset.file.Key);
+        asset.transcript = transcriptJson ? JSON.parse(transcriptJson) : null;
+        transcripts.push(asset);
+      }else if (asset.assetType === "AUDIO") {
+        const signedUrl = getCloudFrontSignedUrl(asset.file.Key);
+        asset.url = signedUrl;
+        audios.push(asset);
+      }
+      delete asset.file;
+    }
+    story.transcripts = transcripts;
+    story.audios = audios;
+    delete story.assets;
 
     return NextResponse.json({ story }, { status: 200 });
   } catch (error) {
@@ -216,6 +212,7 @@ export async function DELETE(req) {
             },
         });
 
+        return NextResponse.json({ message: "Story deleted successfully." }, { status: 200 });
     }
     catch (error) {
         return NextResponse.json({ error: "Failed to delete story:"+error.message }, { status: 500 });

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "../../../../db/prisma_client.js";
 import {s3Client} from "../../../../aws/aws.config.js";
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { getCloudFrontSignedUrl } from "../../../../aws/aws.config.js";
 
 export async function GET(req){
     try{
@@ -40,26 +40,17 @@ export async function GET(req){
         }
 
         for(let image of images){
-            const url = await getSignedUrl(s3Client, new GetObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: image.Key
-            }),{expiresIn:64800});
+            const url = getCloudFrontSignedUrl(image.Key)
             image.url = url;
         }
 
         for(let video of videos){
-            const url = await getSignedUrl(s3Client, new GetObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: video.Key
-            }),{expiresIn:64800});
+            const url = getCloudFrontSignedUrl(video.Key)
             video.url = url;
         }
 
         for(let audio of audios){
-            const url = await getSignedUrl(s3Client, new GetObjectCommand({
-                Bucket: process.env.AWS_BUCKET_NAME,
-                Key: audio.Key
-            }),{expiresIn:64800});
+            const url = getCloudFrontSignedUrl(audio.Key)
             audio.url = url;
         }
 

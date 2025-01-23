@@ -1,10 +1,25 @@
-import { replicate,IMAGE_GENERATION_MODEL } from "./replicate.utils.js";
+import {replicate, IMAGE_GENERATION_MODEL} from "./replicate.utils.js";
+const sanitizeFileName = (prompt) => {
+    // Remove special characters, keep alphanumeric, spaces, and common punctuation
+    let sanitized = prompt
+        .toLowerCase()
+        // Replace any character that's not alphanumeric, space, or dash with a dash
+        .replace(/[^a-z0-9\s-]/g, '-')
+        // Replace multiple consecutive spaces or dashes with a single dash
+        .replace(/[\s-]+/g, '-')
+        // Trim dashes from start and end
+        .replace(/^-+|-+$/g, '')
+        // Limit length to 50 characters
+        .slice(0, 50);
 
-export const imageGenerate = async (prompt, numImages = 1) => {
+    return sanitized || 'generated-image'; // Fallback if sanitized string is empty
+};
+
+export const generateImage = async (prompt,width=1024,height=1024, numImages = 1) => {
     try {
         const input = {
-            width: 1024,
-            height: 1024,
+            width: width,
+            height: height,
             prompt: prompt,
             scheduler: "K_EULER",
             num_outputs: numImages,
@@ -22,20 +37,28 @@ export const imageGenerate = async (prompt, numImages = 1) => {
         );
         console.log("output:", output);
 
-        // Process and upload each generated image
-        const uploadPromises = output.map(async (stream, index) => {
+        const sanitizedPrompt = sanitizeFileName(prompt);
+
+        // Process each generated image
+        const files = await Promise.all(output.map(async (stream, index) => {
             // Convert stream to buffer
             const response = new Response(stream);
             const arrayBuffer = await response.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
+            
+            // Convert buffer to blob
+            const blob = new Blob([buffer], { type: 'image/png' });
+            
+            // Convert blob to file with sanitized name
+            const file = new File([blob], `${sanitizedPrompt}-${index + 1}.png`, {
+                type: 'image/png',
+                lastModified: Date.now()
+            });
+            
+            return file;
+        }));
 
-            // Upload to S3 and get signed URL
-            return buffer;
-        });
-
-        // Wait for all uploads to complete
-        const images = await Promise.all(uploadPromises);
-        return images;
+        return files;
 
     } catch (error) {
         console.error('Error in image generation:', error);

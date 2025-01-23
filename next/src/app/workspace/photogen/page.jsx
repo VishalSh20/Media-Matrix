@@ -7,8 +7,6 @@ import { clearImageGenerationState, generateImagesStart, generateImagesSuccess, 
 import { useUser } from "@clerk/nextjs";
 import { toast, Toaster } from "react-hot-toast";
 import ImageBlock from "@/components/workspace/ImageBlock";
-import { getImagePrompts } from "@/app/utils/gemini/gemini.utils.js";
-import { generateImage } from "@/app/utils/image_generation.utils.js";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 
@@ -27,37 +25,10 @@ export default function Page() {
         if (!prompt) return;
     
         dispatch(generateImagesStart());
-    
-        try {
-            const refinedPrompts = await getImagePrompts(prompt, 3, selectedTheme);
-            console.log("Refined prompts:", refinedPrompts);
-            let uploadedImages = [];
-    
-            for (let refinedPrompt of refinedPrompts) {
-                try {
-                    // Generate the image file
-                    const imageFile = (await generateImage(refinedPrompt))[0];
-    
-                    // Prepare FormData for the upload
-                    const formData = new FormData();
-                    formData.append("userId", user.id);
-                    formData.append("file", imageFile);
-                    formData.append("prompt", refinedPrompt);
-                    formData.append("path", "/ai/images/");
-    
-                    // Upload the image
-                    const { data } = await axios.post(`/api/file`, formData, {
-                        headers: { "Content-Type": "multipart/form-data" },
-                    });
-
-                    uploadedImages.push(data.fileRecord);
-                } catch (uploadError) {
-                    console.error("Error uploading image:", uploadError);
-                    dispatch(generateImagesFailure("Failed to upload an image.:"+uploadError.message));
-                }
-            }
-    
-            dispatch(generateImagesSuccess(uploadedImages));
+    try {   
+        const res = await axios.post(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/generate/image`,{prompt,userId:user.id,animationTheme:selectedTheme});
+        const uploadedImages = res.data?.images;
+        dispatch(generateImagesSuccess(uploadedImages));
         } catch (error) {
             console.error("Error generating images:", error);
             dispatch(generateImagesFailure("Image generation failed."));

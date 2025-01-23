@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import prisma from "../../../../db/prisma_client.js";
-import { s3Client } from "../../../../aws/aws.config.js";
+import { getCloudFrontSignedUrl, s3Client } from "../../../../aws/aws.config.js";
 import {
     PutObjectCommand,
     GetObjectCommand,
     DeleteObjectCommand,
     CopyObjectCommand
  } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 // Add this helper function to determine FILETYPE enum value
 const getFileType = (mimeType) => {
@@ -46,7 +45,14 @@ export async function POST(req) {
     const userId = formData.get('userId');
     const path = formData.get('path') || "/";
     const prompt = formData.get('prompt');
+    console.log("Received Date:",{
+      file,
+      userId,
+      path,
+      prompt
+    });
     
+
     if ((!file) || !userId) {
       return NextResponse.json(
         { error: "File and userId are required" },
@@ -60,6 +66,7 @@ export async function POST(req) {
         id: userId
       }
     });
+    console.log("User:", user);
 
     if (!user) {
       return NextResponse.json(
@@ -89,12 +96,10 @@ export async function POST(req) {
       Body: buffer,
       ContentType: file.type
     }));
+    console.log('File uploaded to S3 successfully');
 
     // get signed url
-    const signedUrl = await getSignedUrl(s3Client, new GetObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key
-    }), { expiresIn: 64800 });
+    const signedUrl = getCloudFrontSignedUrl(key);
 
     // Create file record in database
     let data = {
@@ -105,6 +110,7 @@ export async function POST(req) {
       userId: userId,
       folderPath: path,
     } 
+    console.log(data);
     if(prompt){
       data.prompt = prompt
     }
@@ -155,14 +161,8 @@ export async function GET(req) {
           { status: 404 }
         );
       }
-  
-      // Generate signed URL
-      const command = new GetObjectCommand({
-        Bucket: process.env.AWS_S3_BUCKET,
-        Key: fileKey
-      });
       
-      const signedUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // 1 hour expiry
+      const signedUrl = getCloudFrontSignedUrl(fileKey);
   
       return NextResponse.json({
         ...file,
