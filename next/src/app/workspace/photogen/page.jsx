@@ -7,7 +7,7 @@ import { clearImageGenerationState, generateImagesStart, generateImagesSuccess, 
 import { useUser } from "@clerk/nextjs";
 import { toast, Toaster } from "react-hot-toast";
 import ImageBlock from "@/components/workspace/ImageBlock";
-import axios from "axios";
+import { api } from "../../../../axios.config.js";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
@@ -26,7 +26,7 @@ export default function Page() {
     
         dispatch(generateImagesStart());
     try {   
-        const res = await axios.post(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/generate/image`,{prompt,userId:user.id,animationTheme:selectedTheme});
+        const res = await api.post(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/generate/image`,{prompt,userId:user.id,animationTheme:selectedTheme});
         const uploadedImages = res.data?.images;
         dispatch(generateImagesSuccess(uploadedImages));
         } catch (error) {

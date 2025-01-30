@@ -3,7 +3,7 @@ import { Player } from "@remotion/player";
 import RemotionVideo from "@/components/remotion/RemotionVideo";
 import { aspectRatioToHeight, aspectRatioToWidth } from "@/constants";
 
-function StoryPlayer({ aspectRatio, storyData }) {
+function StoryPlayer({ aspectRatio, storyData, subtitleStyle }) {
   const [state, setState] = useState({
     isLoading: true,
     loadingProgress: 0,
@@ -149,7 +149,8 @@ function StoryPlayer({ aspectRatio, storyData }) {
           inputProps={{
             images: state.preloadedImages,
             audioUrl: state.audioUrl,
-            transcript: storyData.transcripts[0].transcript,
+            subtitleStyle,
+            transcript: storyData.transcripts?.[0]?.transcript,
             totalDuration: storyData.duration
           }}
           className="w-full h-full shadow-lg rounded-lg border border-gray-200"

@@ -1,4 +1,31 @@
 import React, { useMemo } from 'react';
+import { 
+ fontClasses,fontStyles
+} from "../../font.config.js"; // Adjust path as needed
+
+// Mapping of font names to their corresponding classes
+const FONT_MAP = {
+  'Inter': fontClasses.inter,
+  'Roboto': fontClasses.roboto,
+  'Open Sans': fontClasses.openSans,
+  'Lato': fontClasses.lato,
+  'Montserrat': fontClasses.montserrat,
+  'Poppins': fontClasses.poppins,
+  'Nunito': fontClasses.nunito,
+  'Source Sans 3': fontClasses.sourceSans,
+  'Merriweather': fontClasses.merriweather,
+  'Noto Sans': fontClasses.notoSans,
+  'Quicksand': fontClasses.quicksand,
+  'Work Sans': fontClasses.workSans,
+  'Raleway': fontClasses.raleway,
+  'Ubuntu': fontClasses.ubuntu,
+  'Fira Sans': fontClasses.firaSans,  // Fallback for system fonts
+  'Arial': 'font-sans',
+  'Helvetica': 'font-sans',
+  'Times New Roman': 'font-serif',
+  'Courier New': 'font-mono',
+  // Add other system fonts as needed
+};
 
 const RemotionSubtitles = ({
   transcript,
@@ -6,6 +33,10 @@ const RemotionSubtitles = ({
   fontSize = 24,
   fontColor = "#000000",
   textShadow = false,
+  fontFamily = "Arial",
+  textAlign = "center",
+  bottom = 10,
+  left = 50,
   fps = 30
 }) => {
   const currentTimeMs = (currentFrame / fps) * 1000;
@@ -15,56 +46,45 @@ const RemotionSubtitles = ({
       item => currentTimeMs >= item.start && currentTimeMs <= item.end
     );
 
-    // Sort by start time to maintain proper word order
     const sortedWords = visibleWords.sort((a, b) => a.start - b.start);
     
-    // Return the combined text
-    return sortedWords.map(item => item.text).join(" ");
+    return sortedWords.map(item => item.text).join(' ');
   }, [transcript, currentTimeMs]);
 
-  // Style configuration
+  // Get the appropriate font class, with a fallback
+  const fontClass = FONT_MAP[fontFamily] || FONT_MAP['Arial'];
+
   const subtitleStyle = {
     fontSize: `${fontSize}px`,
     color: fontColor,
-    textAlign: 'center',
-    fontFamily: 'Arial, sans-serif',
+    textAlign: `${textAlign}`,
+    fontFamily: fontFamily, // Keep original fontFamily for CSS
     padding: '0.5em 1em',
     width: '100%',
     position: 'absolute',
-    bottom: '10%',
-    left: '50%',
+    bottom: `${bottom}%`,
+    left: `${left}%`,
     transform: 'translateX(-50%)',
     textShadow: textShadow 
       ? '2px 2px 4px rgba(0,0,0,0.8), -2px -2px 4px rgba(0,0,0,0.8), 2px -2px 4px rgba(0,0,0,0.8), -2px 2px 4px rgba(0,0,0,0.8)'
       : 'none',
-    // Add a subtle background to improve readability
-    // backgroundColor: 'rgba(0,0,0,0.3)',
     borderRadius: '4px',
     maxWidth: '90%',
     margin: '0 auto',
     lineHeight: 1.4,
     fontWeight: 500,
-    // Ensure text is always on top
     zIndex: 1000,
-    // Add animation for smooth text changes
     transition: 'opacity 0.2s ease-in-out',
     opacity: currentText ? 1 : 0,
-    // Ensure proper text wrapping
     wordWrap: 'break-word',
     whiteSpace: 'pre-wrap'
   };
 
-  // Debug information (optional, remove in production)
-  const debugInfo = {
-    frame: currentFrame,
-    timeMs: Math.round(currentTimeMs),
-    wordsCount: transcript?.length || 0
-  };
-
-  // console.log('Subtitle Debug:', debugInfo);
-
   return (
-    <div style={subtitleStyle}>
+    <div 
+      className={fontClass} 
+      style={subtitleStyle}
+    >
       {currentText}
     </div>
   );

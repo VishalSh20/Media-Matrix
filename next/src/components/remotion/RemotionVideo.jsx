@@ -2,7 +2,7 @@ import React from "react";
 import { Sequence, AbsoluteFill, Img, Audio,useCurrentFrame } from "remotion";
 import RemotionSubtitles from "./RemotionSubtitles";
 
-function RemotionVideo({ images, audioUrl,transcript,totalDuration }) {
+function RemotionVideo({ images, audioUrl,subtitleStyle,transcript,totalDuration }) {
   const fps = 30;
   const totalFrames = Math.ceil((totalDuration*fps)/1000);
   
@@ -18,7 +18,7 @@ function RemotionVideo({ images, audioUrl,transcript,totalDuration }) {
           durationInFrames={Math.max(Math.ceil((image.duration / 1000) * fps),10)}
         >
           <Img
-            src={image.objectUrl}
+            src={image.objectUrl || image.url}
             className="absolute inset-0 object-cover w-full h-full"
           />
         </Sequence>
@@ -27,9 +27,13 @@ function RemotionVideo({ images, audioUrl,transcript,totalDuration }) {
       <RemotionSubtitles
         transcript={transcript}
         currentFrame={currentFrame}
-        fontSize={24}
-        fontColor="#000000"
-        textShadow={false}
+        fontSize={subtitleStyle.fontSize || 24}
+        fontColor={subtitleStyle.fontColor || "#000000"}
+        fontFamily={subtitleStyle.fontFamily || "Arial"}
+        textAlign={subtitleStyle.textAlign || "center"}
+        bottom={subtitleStyle.bottom || 10}
+        left={subtitleStyle.left || 50}
+        textShadow={subtitleStyle.textShadow || false}
         fps={30}
       />
 

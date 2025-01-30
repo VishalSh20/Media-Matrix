@@ -11,6 +11,28 @@ export async function GET(req){
         const path = searchParams.get('path') || "/";
         const all = searchParams.get('all') || false;
 
+        console.log("Data received:", { userId, path, all });
+        if(!userId){
+            return NextResponse.json({
+                message: "User ID is required",
+                status: 400
+            });
+        }
+
+        console.log('Starting user lookup...');
+        const user = await prisma.user.findUnique({
+            where: {
+                id: userId
+            }
+        });
+        if(!user){
+            return NextResponse.json({
+                message: "User not found",
+                status: 404
+            });
+        }
+
+        console.log('Starting file lookup...');
         let files = await prisma.file.findMany({
             where: {
                 userId: userId,
@@ -54,11 +76,12 @@ export async function GET(req){
             audio.url = url;
         }
 
-        const listingResponse = (await s3Client.send(new ListObjectsV2Command({
+        console.log('Starting S3 operations...');
+        const listingResponse = await s3Client.send(new ListObjectsV2Command({
             Bucket: process.env.AWS_BUCKET_NAME,
             Prefix: `users/${userId}${path}`,
             Delimiter: "/"
-        })));
+        }));
         console.log(listingResponse);
         let folders = (listingResponse.CommonPrefixes || []).map(folder => ({
             name: folder.Prefix.substring(folder.Prefix.substring(0, folder.Prefix.length-1).lastIndexOf("/")+1),
@@ -85,7 +108,7 @@ export async function GET(req){
         });
     }
     catch(error){
-        console.error(error);
+        console.log(error);
         return NextResponse.json(
             { error: "Failed to fetch contents: "+error.message },
             { status: 500 }

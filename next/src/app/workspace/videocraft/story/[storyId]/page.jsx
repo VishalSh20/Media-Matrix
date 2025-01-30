@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect, use } from 'react';
-import { PlayCircle, FileText, Edit, Loader2, Film, Settings, Volume2, Palette, Type } from 'lucide-react';
+import { PlayCircle, FileText, Edit, Loader2, Film, Settings, Volume2, Palette, Type, SparklesIcon, DownloadIcon } from 'lucide-react';
 import StoryPlayer from '@/components/workspace/videocraft/story/StoryPlayer';
 import StorySceneComponent from '@/components/workspace/videocraft/story/StorySceneComponent';
+import RemotionSubtitleControls from '@/components/remotion/RemotionSubtitleControls';
 import { useUser } from '@clerk/nextjs';
-import axios from 'axios';
+import { api } from '../../../../../../axios.config.js';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -17,16 +18,19 @@ function Page({ params }) {
   const [storyData, setStoryData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [editingOptions, setEditingOptions] = useState({
-    volume: 80,
-    fontSize: 24,
-    textColor: "#FFFFFF",
-    showShadow: true
+  const [subtitleStyle, setSubtitleStyle] = useState({
+    fontSize:24,
+    fontColor:"#FFFFFF",
+    textShadow:false,
+    fontFamily:"Arial",
+    textAlign:"center",
+    bottom:10,
+    left:50
   });
 
   useEffect(() => {
     if(user?.id) {
-      axios.get(`/api/videoStory?userId=${user.id}&storyId=${storyId}`)
+      api.get(`/api/videoStory?userId=${user.id}&storyId=${storyId}`)
         .then((response) => {
           setStoryData(response.data.story);
         })
@@ -68,7 +72,36 @@ function Page({ params }) {
 
         {/* Main Content Panel */}
         <ResizablePanel defaultSize={75}>
-          <div className="h-screen flex flex-col gap-4 bg-gray-50">
+          <div className="flex flex-col h-screen overflow-y-auto gap-4 bg-gray-50">
+            {/* Export button */}
+            <div className="flex gap-4 p-2 w-full justify-center items-center">
+             <Button
+              onClick={async()=>{
+                const images = storyData.scenes
+                .sort((a, b) => a.sceneOrder - b.sceneOrder)
+                .flatMap(scene => 
+                  scene.images.sort((a, b) => a.startTime - b.startTime)
+                );
+                const audioUrl = storyData.audios?.[0]?.url || "";
+                const transcript = storyData.transcripts[0]?.transcript;
+                try {
+                  const renderedVideo= (await api.post("/api/renderVideo", {
+                    images,
+                    audioUrl,
+                    transcript,
+                    subtitleStyle,
+                    totalDuration: storyData.duration
+                  })).data;
+                  console.log(renderedVideo);
+                } catch (error) {
+                  console.error("Error rendering video:", error.message);
+                }
+              }}
+             >
+              Export
+              <DownloadIcon/>
+             </Button>
+            </div>
             {/* Video Player Section */}
             <div className="flex flex-col p-6 pb-2 justify-center items-start">
               <div className="w-full max-w-3xl">
@@ -77,6 +110,7 @@ function Page({ params }) {
                     <StoryPlayer 
                       aspectRatio={storyData?.aspectRatio || 'PORTRAIT'} 
                       storyData={storyData}
+                      subtitleStyle={subtitleStyle}
                     />
                   </CardContent>
                 </Card>
@@ -85,15 +119,15 @@ function Page({ params }) {
 
             {/* Editing Options Section */}
             <div className="border-t bg-white p-4">
-              <Tabs defaultValue="audio" className="w-full">
+              <Tabs defaultValue="subtitles" className="w-full">
                 <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-3 mb-4">
-                  <TabsTrigger value="audio">
-                    <Volume2 className="w-4 h-4 mr-2" />
-                    Audio
-                  </TabsTrigger>
                   <TabsTrigger value="text">
                     <Type className="w-4 h-4 mr-2" />
                     Subtitles
+                  </TabsTrigger>
+                  <TabsTrigger value="animation">
+                    <SparklesIcon className="w-4 h-4 mr-2" />
+                    Animation
                   </TabsTrigger>
                   <TabsTrigger value="style">
                     <Palette className="w-4 h-4 mr-2" />
@@ -101,45 +135,9 @@ function Page({ params }) {
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="audio" className="max-w-2xl mx-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Volume</label>
-                      <span className="text-sm text-gray-500">{editingOptions.volume}%</span>
-                    </div>
-                    <Slider 
-                      value={[editingOptions.volume]}
-                      onValueChange={([volume]) => setEditingOptions(prev => ({...prev, volume}))}
-                      max={100}
-                      step={1}
-                    />
-                  </div>
-                </TabsContent>
-
+             
                 <TabsContent value="text" className="max-w-2xl mx-auto">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Font Size</label>
-                      <span className="text-sm text-gray-500">{editingOptions.fontSize}px</span>
-                    </div>
-                    <Slider 
-                      value={[editingOptions.fontSize]}
-                      onValueChange={([fontSize]) => setEditingOptions(prev => ({...prev, fontSize}))}
-                      min={16}
-                      max={48}
-                      step={1}
-                    />
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium">Text Shadow</label>
-                      <Button 
-                        variant={editingOptions.showShadow ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setEditingOptions(prev => ({...prev, showShadow: !prev.showShadow}))}
-                      >
-                        {editingOptions.showShadow ? "On" : "Off"}
-                      </Button>
-                    </div>
-                  </div>
+                  <RemotionSubtitleControls subtitleStyle={subtitleStyle} setSubtitleStyle={setSubtitleStyle} />
                 </TabsContent>
 
                 <TabsContent value="style" className="max-w-2xl mx-auto">

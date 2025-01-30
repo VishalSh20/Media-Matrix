@@ -39,6 +39,7 @@ export async function GET(req) {
     }
 
     // Validate user existence
+    console.log("Validating user existence...");
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -48,6 +49,7 @@ export async function GET(req) {
     }
 
     // Fetch the story and related data
+    console.log("Fetching story and related data...");
     const story = await prisma.videoStoryProject.findUnique({
       where: { id: storyId },
       include: {
