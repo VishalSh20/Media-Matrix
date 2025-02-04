@@ -73,35 +73,9 @@ function Page({ params }) {
         {/* Main Content Panel */}
         <ResizablePanel defaultSize={75}>
           <div className="flex flex-col h-screen overflow-y-auto gap-4 bg-gray-50">
-            {/* Export button */}
-            <div className="flex gap-4 p-2 w-full justify-center items-center">
-             <Button
-              onClick={async()=>{
-                const images = storyData.scenes
-                .sort((a, b) => a.sceneOrder - b.sceneOrder)
-                .flatMap(scene => 
-                  scene.images.sort((a, b) => a.startTime - b.startTime)
-                );
-                const audioUrl = storyData.audios?.[0]?.url || "";
-                const transcript = storyData.transcripts[0]?.transcript;
-                try {
-                  const renderedVideo= (await api.post("/api/renderVideo", {
-                    images,
-                    audioUrl,
-                    transcript,
-                    subtitleStyle,
-                    totalDuration: storyData.duration
-                  })).data;
-                  console.log(renderedVideo);
-                } catch (error) {
-                  console.error("Error rendering video:", error.message);
-                }
-              }}
-             >
-              Export
-              <DownloadIcon/>
-             </Button>
-            </div>
+            {/* Export option */}
+            <span className='text-sm text-blue-500'>The export option will be available soon!</span>
+            
             {/* Video Player Section */}
             <div className="flex flex-col p-6 pb-2 justify-center items-start">
               <div className="w-full max-w-3xl">

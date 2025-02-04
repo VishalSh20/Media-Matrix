@@ -5,7 +5,9 @@ import { generateVideoStoryAssets } from "../utils/video_story_generation.utils.
 
 export const generateImageController = async (req, res) => {
   try {
+    console.log("Received request for image generation!");
     const { prompt,userId, animationTheme, width=1024, height=1024, n=1} = req.body;
+    console.log("Data: ",{prompt,userId,animationTheme,width,height});
     if(!prompt) {
       return res.status(400).json({
         message: "Prompt is required",

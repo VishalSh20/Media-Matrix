@@ -8,6 +8,7 @@ import { useUser } from "@clerk/nextjs";
 import { toast, Toaster } from "react-hot-toast";
 import ImageBlock from "@/components/workspace/ImageBlock";
 import { api } from "../../../../axios.config.js";
+import { invokeLambda } from "../../../../aws/aws.config.js";
 import { useRouter } from "next/navigation";
 
 export default function Page() {
@@ -23,16 +24,35 @@ export default function Page() {
     const handleGenerateImageWithText = async (e) => {
         e.preventDefault();
         if (!prompt) return;
-    
+        
         dispatch(generateImagesStart());
-    try {   
-        const res = await api.post(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/generate/image`,{prompt,userId:user.id,animationTheme:selectedTheme});
-        const uploadedImages = res.data?.images;
-        dispatch(generateImagesSuccess(uploadedImages));
-        } catch (error) {
-            console.error("Error generating images:", error);
-            dispatch(generateImagesFailure("Image generation failed."));
-        }
+        try {
+                const payload = {
+                    path: '/generate/image',
+                    httpMethod: 'POST',
+                    body: JSON.stringify({
+                        prompt,
+                        userId: user.id,
+                        animationTheme: selectedTheme
+                    })
+                }
+          
+            const response = await invokeLambda(process.env.NEXT_PUBLIC_LAMBDA_BACKEND_NAME,payload);
+            console.log(response);
+            const result = JSON.parse(response);
+            
+            // The Lambda response will include statusCode and body
+            if (result.statusCode === 200) {
+                const uploadedImages = JSON.parse(result.body)?.images;
+                dispatch(generateImagesSuccess(uploadedImages));
+            } else {
+                throw new Error(result.body || 'Failed to generate images');
+            }}
+            catch(err){
+                console.log("Error generating images:", err);
+                dispatch(generateImagesFailure("Image generation failed."));
+                toast.error("Image generation failed due to technical issues!");
+            }
     };
     
     return (
@@ -60,7 +80,7 @@ export default function Page() {
                             <span>Clear</span>
                         </button>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="flex flex-wrap justify-center items-center gap-4">
                         {generatedImages.map((image, index) => (
                             <ImageBlock key={index} image={image} showDescription={false}/>
                         ))}

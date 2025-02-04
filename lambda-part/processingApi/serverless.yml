@@ -1,0 +1,24 @@
+# "org" ensures this Service is used with the correct Serverless Framework Access Key.
+org: mediamatrix
+# "service" is the name of this project. This will also be added to your AWS resource names.
+service: processingApi
+plugins: 
+  - serverless-dotenv-plugin
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  environment:
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    REPLICATE_API_TOKEN: ${env:REPLICATE_API_TOKEN}
+    ASSEMBLYAI_API_KEY: ${env:ASSEMBLYAI_API_KEY}
+    NEXT_DEVELOPMENT_URL: ${env:NEXT_DEVELOPMENT_URL}
+    NEXT_DEPLOYED_URL: ${env:NEXT_DEPLOYED_URL}
+
+functions:
+  api:
+    handler: app.handler
+    events:
+      - httpApi: "*"
+
+

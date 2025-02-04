@@ -1,7 +1,5 @@
 import { useEffect } from "react";
 
-
-
 export default function AllAudio(){
     const [user, isLoaded] = useUser();
     const [audios , setAudios] = useState([]);
@@ -48,7 +46,7 @@ export default function AllAudio(){
                  {
                     audios.map((audio,index)=>{
                         return(
-                            <AudioBlock key={index} audio={audio} />
+                            <audio src={audio.url} key={index} controls className="w-full max-w-xs"/>
                         )
                     })
                  }

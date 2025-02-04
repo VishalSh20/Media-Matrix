@@ -15,7 +15,8 @@ import {
   ImageIcon, 
   XIcon,
   Loader,
-  InfoIcon
+  InfoIcon,
+  Download
 } from 'lucide-react'
 import PropertiesModal from './FileProperties.jsx';
 import DeleteConfirmationModal from './DeleteConfirmationModal.jsx';
@@ -47,7 +48,7 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
           updates:{name: name}
         }
         
-        baseApi.put(`/api/file`,updationData)
+        baseApi.put('/api/file', updationData)
         .then((res)=>{
             toast.success("Filename updated successfully");
             setTimeout(()=>{
@@ -84,6 +85,23 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
         })
     }
 
+    const handleDownload = async (url, filename) => {
+      try {
+          const response = await fetch(url);
+          const blob = await response.blob();
+          const downloadUrl = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = downloadUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(downloadUrl);
+      } catch (error) {
+          toast.error("Error downloading file: " + error.message);
+      }
+  };
+  
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog 
@@ -147,7 +165,7 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                     
                   </div>
                   <div className="flex items-center gap-4">
-                  <button
+                    <button
                       className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-200 rounded-md transition-colors"
                       title="Show Properties"
                       onClick={()=>{
@@ -172,6 +190,13 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
                       <ExternalLink size={18} />
                     </button>
                     <button
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-gray-200 rounded-md transition-colors"
+                      title="Download"
+                      onClick={() => handleDownload(imagePrompt.url, imagePrompt.name)}
+                    >
+                        <Download size={18} />
+                    </button>
+                    <button
                       className="flex items-center gap-2 px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
                       title="Delete"
                       onClick={() => setShowDeleteConfirm(true)}
@@ -189,15 +214,16 @@ export default function ImageViewerModal({ isOpen, onClose, imagePrompt }) {
 
                 {/* Image Container */}
                 <div className="flex justify-center items-center h-[calc(90vh-3.5rem)] w-full overflow-auto p-4 bg-gray-100">
-                <div className="relative max-h-full max-w-full overflow-hidden">
-                  <Image
-                    src={imagePrompt.url}
-                    alt={imagePrompt.name || "image"}
-                    width={800} // Adjust as needed
-                    height={600} // Adjust as needed
-                    objectFit="contain" // Ensure the image stays within its container
-                  />
-                </div>
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={imagePrompt.url}
+                      alt={imagePrompt.name || "image"}
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 90vw) 100vw"
+                      priority
+                    />
+                  </div>
                 </div>
               </DialogPanel>
             </TransitionChild>

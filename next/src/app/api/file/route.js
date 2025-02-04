@@ -7,6 +7,7 @@ import {
     DeleteObjectCommand,
     CopyObjectCommand
  } from "@aws-sdk/client-s3";
+import { withRetry } from "@/utils/prisma/retry.utils.js";
 
 // Add this helper function to determine FILETYPE enum value
 const getFileType = (mimeType) => {
@@ -61,11 +62,11 @@ export async function POST(req) {
     }
 
     // check if user exists
-    const user = await prisma.user.findUnique({
+    const user = await withRetry(async()=>await prisma.user.findUnique({
       where: {
         id: userId
       }
-    });
+    }));
     console.log("User:", user);
 
     if (!user) {
@@ -89,6 +90,7 @@ export async function POST(req) {
     // Generate unique S3 key
     const key = `users/${userId}${path}${Date.now()}-${file.name}`;
 
+    console.log("Uploading to bucket..");
     // Upload to S3
     await s3Client.send(new PutObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
@@ -114,9 +116,9 @@ export async function POST(req) {
     if(prompt){
       data.prompt = prompt
     }
-    let fileRecord = await prisma.file.create({
+    let fileRecord = await withRetry(async()=> await prisma.file.create({
       data: data
-    });
+    }));
     fileRecord.url = signedUrl;
     fileRecord.filename = file.name;
     fileRecord.extension = file.name.split('.').pop();
@@ -138,36 +140,74 @@ export async function GET(req) {
     try {
       const { searchParams } = new URL(req.url);
       const userId = searchParams.get('userId');
-      const fileKey = searchParams.get('fileKey');
-  
-      if (!userId || !fileKey) {
+      const type = (searchParams.get('type')).toUpperCase();
+      const page = parseInt(searchParams.get('page')) || 1;
+      const limit = parseInt(searchParams.get('limit')) || 10;
+
+      if(page < 1 || limit < 1){
         return NextResponse.json(
-          { error: "userId and fileKey are required" },
+          { error: "Page and limit must be greater than 0" },
           { status: 400 }
         );
       }
-  
-      // Get file metadata from database
-      const file = await prisma.file.findFirst({
-        where: {
-          Key: fileKey,
-          userId: userId
-        }
-      });
-  
-      if (!file) {
+      
+      if(!["IMAGE","VIDEO","AUDIO","DOCUMENT"].includes(type)){
         return NextResponse.json(
-          { error: "File not found" },
-          { status: 404 }
+          { error: "Invalid type" },{status: 400}
         );
       }
+  
+      if (!userId) {
+        return NextResponse.json(
+          { error: "userId is required" },
+          { status: 400 }
+        );
+      }
+
+      console.log("Validating user:", userId);
+      const user = await withRetry(async () => {
+        return await prisma.user.findUnique({
+          where: {
+            id: userId
+          }
+        });
+      })
+  
+      console.log("Fetching the files...");
+      // Get file metadata from database
+      let files = await withRetry(async()=>prisma.file.findMany({
+        where: {
+          userId: userId
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      }));
+  
+      let totalSize = 0;
+      for(let file of files){
+        file.filename = file.Key.split("/").pop();
+        file.path = file.folderPath+file.filename;
+        file.extension = file.Key.split(".").pop();
+        totalSize+=file.Size;
+      }
       
-      const signedUrl = getCloudFrontSignedUrl(fileKey);
+      files = files.filter(file => file.type.includes(type));
+      const totalPages = Math.ceil(files.length / limit);
+      const totalFiles = files.length;
+      files = files.slice((page - 1) * limit, page * limit);
+      
+      for(let file of files){
+        file.url = getCloudFrontSignedUrl(file.Key);
+      }
+      
   
       return NextResponse.json({
-        ...file,
-        url: signedUrl
-      });
+        files,
+        totalSize,
+        totalPages,
+        totalFiles
+      },{status: 200});
   
     } catch (error) {
       console.error('File retrieval error:', error);

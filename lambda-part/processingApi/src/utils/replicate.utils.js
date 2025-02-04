@@ -1,6 +1,9 @@
+import { config } from "dotenv";
+config();
 import Replicate from "replicate";
 
 const token = process.env.REPLICATE_API_TOKEN;
+console.log(token);
 export const replicate = new Replicate({
   auth: token,
 });

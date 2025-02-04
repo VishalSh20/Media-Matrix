@@ -10,7 +10,7 @@ import GeneratingComponent from "@/components/workspace/videocraft/story/create/
 import { useSelector,useDispatch } from "react-redux";
 import {startGenerating,stopGenerating} from "@/app/lib/features/storyGeneration.slice";
 import { useUser } from "@clerk/nextjs";
-import axios from "axios";
+import { invokeLambda} from "../../../../../../aws/aws.config.js";
 
 const Page = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -19,21 +19,39 @@ const Page = () => {
   const dispatch = useDispatch();
   const storyOptions = useSelector((state) => state.storyGeneration.storyOptions);
   const isGenerating = useSelector((state) => state.storyGeneration.isGenerating);
-  const handleStoryGeneration = async()=>{
+
+
+  const handleStoryGeneration = async () => {
     try {
-      dispatch(startGenerating());
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_LAMBDA_BACKEND_URL}/generate/video`,{storyOptions,userId:user.id});
-      const storyId = res.data?.storyId;
-      console.log("Story ID:", storyId);
-      setTimeout(() => {
-        router.push(`/workspace/videocraft/story/${storyId}`);
-      }, 1000);
-      dispatch(stopGenerating());
+        dispatch(startGenerating());
+        const payload = {
+                path: '/generate/video',
+                httpMethod: 'POST',
+                body: JSON.stringify({
+                    storyOptions,
+                    userId: user.id
+                })
+            }
+
+        const response = await invokeLambda(process.env.NEXT_PUBLIC_LAMBDA_BACKEND_NAME,payload);
+        const result = JSON.parse(response);
+        
+        if (result.statusCode === 200) {
+            const storyId = JSON.parse(result.body)?.storyId;
+            console.log("Story ID:", storyId);
+            setTimeout(() => {
+                router.push(`/workspace/videocraft/story/${storyId}`);
+            }, 1000);
+        } else {
+            throw new Error(result.body || 'Failed to generate story');
+        }
+        
+        dispatch(stopGenerating());
     } catch (error) {
-      console.error("Error generating story:", error.message);
-      dispatch(stopGenerating(error.message));
+        console.error("Error generating story:", error.message);
+        dispatch(stopGenerating(error.message));
     }
-  }
+};
 
   const handleNext = () => {
     if(currentStep === 4){

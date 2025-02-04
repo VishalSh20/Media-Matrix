@@ -3,6 +3,7 @@ import prisma from "../../../../db/prisma_client.js";
 import {s3Client} from "../../../../aws/aws.config.js";
 import { ListObjectsV2Command, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getCloudFrontSignedUrl } from "../../../../aws/aws.config.js";
+import { withRetry } from "@/utils/prisma/retry.utils.js";
 
 export async function GET(req){
     try{
@@ -20,11 +21,11 @@ export async function GET(req){
         }
 
         console.log('Starting user lookup...');
-        const user = await prisma.user.findUnique({
+        const user = await withRetry(()=>prisma.user.findUnique({
             where: {
                 id: userId
             }
-        });
+        }));
         if(!user){
             return NextResponse.json({
                 message: "User not found",
@@ -33,14 +34,14 @@ export async function GET(req){
         }
 
         console.log('Starting file lookup...');
-        let files = await prisma.file.findMany({
+        let files = await withRetry(()=>prisma.file.findMany({
             where: {
                 userId: userId,
                 folderPath:{
                     startsWith:path
                 }
             }
-        });
+        }));
 
         let totalSize = 0;
         for(let file of files){
@@ -105,10 +106,9 @@ export async function GET(req){
             videos,
             audios,
             folders
-        });
+        },{status:200});
     }
     catch(error){
-        console.log(error);
         return NextResponse.json(
             { error: "Failed to fetch contents: "+error.message },
             { status: 500 }
